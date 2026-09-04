@@ -1,3 +1,5 @@
+<img width="2048" height="768" alt="image" src="https://github.com/user-attachments/assets/f97b2c1e-1f22-4d0c-8358-d4f1fdf0c23c" />
+
 # Step 1 — What is Domain-Driven Design?
 
 Before coding, understand this idea.
