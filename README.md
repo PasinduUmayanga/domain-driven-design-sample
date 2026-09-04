@@ -121,58 +121,14 @@ We'll begin with these:
 
 I recommend this initial architecture:
 
-```text
-OrderingSystem
-|
-+-- src
-|   +-- Ordering.Domain
-|   +-- Ordering.Application
-|   +-- Ordering.Infrastructure
-|   +-- Ordering.Api
-|
-+-- tests
-    +-- Ordering.Domain.Tests
-    +-- Ordering.Application.Tests
-```
+<img width="1774" height="887" alt="image" src="https://github.com/user-attachments/assets/98831335-34f9-4a0d-81e9-c5996ba49afa" />
 
-The dependency direction will eventually be:
-
-```text
-               Ordering.Api
-                    |
-                    v
-          Ordering.Application
-                    |
-                    v
-             Ordering.Domain
-
-
-          Ordering.Infrastructure
-                    |
-                    +------------> Application
-                    |
-                    +------------> Domain
-```
 
 ## Create the Solution in Visual Studio
 
 You can create this solution using the Visual Studio user interface.
 
-Open Visual Studio and select **Create a new project**.
-
-Screenshot to add: `docs/images/visual-studio-create-new-project.png`
-
-Search for **Blank Solution**, select it, and click **Next**.
-
-Set the solution name to:
-
-```text
-OrderingSystem
-```
-
-Choose the location where you want to save the project, then click **Create**.
-
-Screenshot to add: `docs/images/visual-studio-blank-solution.png`
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/7ba36880-47e4-4bc2-ad28-01398eee502c" />
 
 After the solution is created, add two solution folders:
 
@@ -182,84 +138,7 @@ After the solution is created, add two solution folders:
 4. Name the first folder `src`.
 5. Repeat the same steps and name the second folder `tests`.
 
-Screenshot to add: `docs/images/visual-studio-add-solution-folders.png`
+Now create projects:
 
-Now add the Domain project:
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/0d33e752-ceb2-4a7a-b2db-73d2518aaa3f" />
 
-1. Right-click the `src` solution folder.
-2. Select **Add**.
-3. Select **New Project**.
-4. Search for **Class Library**.
-5. Select the C# Class Library template and click **Next**.
-6. Set the project name to `Ordering.Domain`.
-7. Choose `.NET 10.0` as the target framework.
-8. Click **Create**.
-
-Add the Application project the same way:
-
-```text
-Project name: Ordering.Application
-Template: Class Library
-Target framework: .NET 10.0
-Solution folder: src
-```
-
-Add the Infrastructure project the same way:
-
-```text
-Project name: Ordering.Infrastructure
-Template: Class Library
-Target framework: .NET 10.0
-Solution folder: src
-```
-
-Add the API project:
-
-```text
-Project name: Ordering.Api
-Template: ASP.NET Core Web API
-Target framework: .NET 10.0
-Solution folder: src
-```
-
-Screenshot to add: `docs/images/visual-studio-add-projects.png`
-
-Now add the test projects under the `tests` solution folder.
-
-Add the Domain test project:
-
-```text
-Project name: Ordering.Domain.Tests
-Template: xUnit Test Project
-Target framework: .NET 10.0
-Solution folder: tests
-```
-
-Add the Application test project:
-
-```text
-Project name: Ordering.Application.Tests
-Template: xUnit Test Project
-Target framework: .NET 10.0
-Solution folder: tests
-```
-
-Screenshot to add: `docs/images/visual-studio-add-test-projects.png`
-
-When finished, the solution should look like this:
-
-```text
-OrderingSystem
-|
-+-- src
-|   +-- Ordering.Domain
-|   +-- Ordering.Application
-|   +-- Ordering.Infrastructure
-|   +-- Ordering.Api
-|
-+-- tests
-    +-- Ordering.Domain.Tests
-    +-- Ordering.Application.Tests
-```
-
-Screenshot to add: `docs/images/visual-studio-final-solution-structure.png`
