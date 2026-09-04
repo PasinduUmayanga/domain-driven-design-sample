@@ -171,3 +171,73 @@ And infrastructure supports it:
 But this should never happen:
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3123ba35-59a2-4f3a-b576-ad6ace4efc0d" />
+
+## Step 3 - Create the Order Entity
+
+Inside `src/Ordering.Domain`, create this structure:
+
+```text
+Ordering.Domain
+|
++-- Orders
+|   +-- Order.cs
+|   +-- OrderStatus.cs
+|
++-- Ordering.Domain.csproj
+```
+
+Create `OrderStatus.cs`:
+
+```csharp
+namespace Ordering.Domain.Orders;
+
+public enum OrderStatus
+{
+    Pending = 1,
+    Confirmed = 2,
+    Cancelled = 3
+}
+```
+
+Now create `Order.cs`:
+
+```csharp
+namespace Ordering.Domain.Orders;
+
+public sealed class Order
+{
+    public Guid Id { get; private set; }
+
+    public Guid CustomerId { get; private set; }
+
+    public OrderStatus Status { get; private set; }
+
+    public DateTime CreatedAtUtc { get; private set; }
+
+    private Order()
+    {
+    }
+
+    private Order(Guid id, Guid customerId)
+    {
+        Id = id;
+        CustomerId = customerId;
+        Status = OrderStatus.Pending;
+        CreatedAtUtc = DateTime.UtcNow;
+    }
+
+    public static Order Create(Guid customerId)
+    {
+        if (customerId == Guid.Empty)
+        {
+            throw new ArgumentException(
+                "Customer ID cannot be empty.",
+                nameof(customerId));
+        }
+
+        return new Order(
+            Guid.NewGuid(),
+            customerId);
+    }
+}
+```
