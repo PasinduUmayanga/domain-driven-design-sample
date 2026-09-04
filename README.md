@@ -176,15 +176,8 @@ But this should never happen:
 
 Inside `src/Ordering.Domain`, create this structure:
 
-```text
-Ordering.Domain
-|
-+-- Orders
-|   +-- Order.cs
-|   +-- OrderStatus.cs
-|
-+-- Ordering.Domain.csproj
-```
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/eaade010-f557-40ff-86fe-51b482570d54" />
+
 
 Create `OrderStatus.cs`:
 
