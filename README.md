@@ -1,3 +1,4 @@
+# domain-driven-design-sample
 <img width="2048" height="768" alt="image" src="https://github.com/user-attachments/assets/f97b2c1e-1f22-4d0c-8358-d4f1fdf0c23c" />
 
 # Step 1 — What is Domain-Driven Design?
@@ -23,15 +24,7 @@ Domain: Online Ordering
 
 Inside that domain we have concepts such as:
 
-```text
-Customer
-Order
-Order Item
-Product
-Payment
-Shipment
-Discount
-```
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/9e3b50a8-eb71-434d-b63c-5dc981704fdf" />
 
 These aren't programming concepts.
 
@@ -71,5 +64,3 @@ order.Confirm();
 ```
 
 Now the model represents actual business behavior.
-# domain-driven-design-sample
-<img width="1100" height="575" alt="image" src="https://github.com/user-attachments/assets/19da2512-680f-4af6-ad07-2ced9816f7f6" />
