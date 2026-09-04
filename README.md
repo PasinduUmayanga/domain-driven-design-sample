@@ -117,6 +117,7 @@ We'll begin with these:
 9. Order total is calculated from its items.
 10. An order can only be confirmed once.
 
+# Step 2 — Create our .NET 10 solution
 ## Initial Architecture
 
 I recommend this initial architecture:
@@ -172,7 +173,7 @@ But this should never happen:
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3123ba35-59a2-4f3a-b576-ad6ace4efc0d" />
 
-## Step 3 - Create the Order Entity
+# Step 3 - Create the Order Entity
 
 Inside `src/Ordering.Domain`, create this structure:
 
