@@ -154,5 +154,20 @@ Check the dependency structure
 You should now have approximately:
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3e5bc502-61f9-4d3d-96d7-7efbf8087537" />
 
+Why four projects?
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/4db9df5d-2552-4358-917d-de29cfd30652" />
+
+Very important DDD dependency rule
+Think about the architecture like this:
+
+<img width="1145" height="1373" alt="image" src="https://github.com/user-attachments/assets/5e17ea6c-6efa-4200-bdda-e7d7c06c6663" />
 
 
+
+And infrastructure supports it:
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/52a86822-0d2b-4a55-88ee-a805ecffc5f2" />
+
+But this should never happen:
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3123ba35-59a2-4f3a-b576-ad6ace4efc0d" />
