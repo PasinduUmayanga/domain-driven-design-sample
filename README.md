@@ -73,7 +73,8 @@ Developers and business people should use the same terminology.
 
 For our ordering domain, the shared language includes:
 
-![Ubiquitous Language in DDD](https://chatgpt.com/backend-api/estuary/content?id=file_00000000c92c82119bc999a7fdc6a895&ts=496819&p=fs&cid=1&sig=2ea237f85cf4ec31899dcae68c006a95c3f5c723982ed447b57c618dc0bf7b7b&v=0)
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3e2fc4ad-89c5-43aa-ade9-56f57ca5718b" />
+
 
 The C# code should use exactly those concepts:
 
