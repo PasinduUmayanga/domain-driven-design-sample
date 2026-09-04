@@ -8,43 +8,10 @@ DDD means:
 
 Build your software around the business domain and business rules instead of around database tables.
 
-For example, without DDD, someone might start the ordering system like this:
+For example
 
-```text
-Database
-   ↓
-Orders table
-OrderItems table
-Products table
-   ↓
-EF Entities
-   ↓
-Controllers
-```
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/fead04cd-8239-4845-8a0b-96dda3f9de22" />
 
-The database becomes the center of the design.
-
-DDD thinks differently:
-
-```text
-Business
-   ↓
-Order
-OrderItem
-Customer
-Product
-Payment
-   ↓
-Business Rules
-   ↓
-Application
-   ↓
-Infrastructure
-   ↓
-Database
-```
-
-The business model is the center.
 
 ## What is a Domain?
 
