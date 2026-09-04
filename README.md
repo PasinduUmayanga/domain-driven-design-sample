@@ -235,3 +235,157 @@ public sealed class Order
     }
 }
 ```
+
+### Why is Order an Entity?
+
+In DDD, an Entity is identified by its unique identity, usually an ID, rather than only by its data.
+
+```text
+Order A -> Id: 111
+Order B -> Id: 222
+```
+
+Even if both orders have the same customer, total, and status, they are still different orders because their IDs are different.
+
+```text
+Entity = Identity matters
+```
+
+In contrast, a Value Object is identified by its values.
+
+```text
+LKR 500 == LKR 500
+```
+
+```text
+Value Object = Values matter
+```
+
+So, `Order` is an Entity because each order has its own unique identity.
+
+### Why Use Private Setters?
+
+In DDD, entities should protect their own state.
+
+Public setters allow code outside the entity to change its state directly:
+
+```csharp
+public OrderStatus Status { get; set; }
+```
+
+That means any code can do this:
+
+```csharp
+order.Status = OrderStatus.Confirmed;
+order.CustomerId = Guid.Empty;
+```
+
+This can allow invalid state changes.
+
+Private setters prevent direct changes from outside the entity:
+
+```csharp
+public OrderStatus Status { get; private set; }
+```
+
+Now the state must be changed through business methods:
+
+```csharp
+order.Confirm();
+```
+
+The method can validate and enforce business rules before changing the state.
+
+Encapsulation means the entity protects and controls its own state.
+
+### Why Use Order.Create()?
+
+In DDD, an entity should be valid from the moment it is created.
+
+Direct creation can bypass important rules:
+
+```csharp
+var order = new Order();
+```
+
+This could allow an invalid order:
+
+```csharp
+order.CustomerId = Guid.Empty;
+```
+
+Instead, use a factory method:
+
+```csharp
+var order = Order.Create(customerId);
+```
+
+The `Create()` method validates required data and creates the entity correctly:
+
+```csharp
+public static Order Create(Guid customerId)
+{
+    if (customerId == Guid.Empty)
+    {
+        throw new ArgumentException(
+            "Customer ID cannot be empty.",
+            nameof(customerId));
+    }
+
+    return new Order(
+        Guid.NewGuid(),
+        customerId);
+}
+```
+
+This ensures every new `Order` starts with:
+
+- A valid Order ID
+- A valid Customer ID
+- The correct initial status
+- A created date
+
+DDD principle: make invalid states difficult or impossible to create.
+
+### Why Is the Constructor Private?
+
+A private constructor prevents outside code from creating an `Order` directly.
+
+Avoid direct creation:
+
+```csharp
+new Order(...);
+```
+
+Use the factory method instead:
+
+```csharp
+var order = Order.Create(customerId);
+```
+
+This ensures the Domain controls how an `Order` is created and can enforce all required business rules.
+
+```csharp
+private Order(Guid id, Guid customerId)
+{
+    // Initialize valid Order
+}
+```
+
+### What About the Empty Constructor?
+
+```csharp
+private Order()
+{
+}
+```
+
+This will later be used by EF Core when loading an `Order` from the database.
+
+Application code should normally create orders through:
+
+```csharp
+Order.Create(customerId);
+```
+
+Key idea: private constructors prevent uncontrolled object creation and help keep the entity valid.
