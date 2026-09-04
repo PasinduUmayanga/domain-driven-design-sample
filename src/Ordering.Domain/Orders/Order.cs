@@ -2,6 +2,8 @@
 
 public sealed class Order
 {
+    private readonly List<OrderItem> _items = [];
+
     /// <summary>
     /// Gets the identity assigned when the order is created.
     /// </summary>
@@ -21,6 +23,17 @@ public sealed class Order
     /// Gets the UTC timestamp at which the order was created.
     /// </summary>
     public DateTime CreatedAtUtc { get; private set; }
+
+    /// <summary>
+    /// Gets the items currently included in this order.
+    /// </summary>
+    public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
+
+    /// <summary>
+    /// Gets the aggregate total of all order line items.
+    /// </summary>
+    public decimal TotalAmount =>
+        _items.Sum(item => item.TotalPrice);
 
     // Reserved for ORM/materialization scenarios. Domain code must use Create so
     // every new order begins in a valid pending state.
@@ -55,15 +68,49 @@ public sealed class Order
     }
 
     /// <summary>
-    /// Moves a pending order to the confirmed state.
+    /// Adds a product to this pending order, or increases the quantity when that product is already present.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown unless the order is pending.</exception>
+    /// <exception cref="ArgumentException">Thrown when the product identity or name is invalid.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when the price or quantity is invalid.</exception>
+    public void AddItem(
+        Guid productId,
+        string productName,
+        decimal unitPrice,
+        int quantity)
+    {
+        EnsurePending();
+
+        var existingItem = _items.FirstOrDefault(
+            item => item.ProductId == productId);
+
+        if (existingItem is not null)
+        {
+            existingItem.IncreaseQuantity(quantity);
+            return;
+        }
+
+        var orderItem = new OrderItem(
+            productId,
+            productName,
+            unitPrice,
+            quantity);
+
+        _items.Add(orderItem);
+    }
+
+    /// <summary>
+    /// Confirms a non-empty pending order.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the order is not pending or has no items.</exception>
     public void Confirm()
     {
-        if (Status != OrderStatus.Pending)
+        EnsurePending();
+
+        if (_items.Count == 0)
         {
             throw new InvalidOperationException(
-                "Only pending orders can be confirmed.");
+                "An empty order cannot be confirmed.");
         }
 
         Status = OrderStatus.Confirmed;
@@ -75,12 +122,17 @@ public sealed class Order
     /// <exception cref="InvalidOperationException">Thrown unless the order is pending.</exception>
     public void Cancel()
     {
+        EnsurePending();
+
+        Status = OrderStatus.Cancelled;
+    }
+
+    private void EnsurePending()
+    {
         if (Status != OrderStatus.Pending)
         {
             throw new InvalidOperationException(
-                "Only pending orders can be cancelled.");
+                "Only pending orders can be modified.");
         }
-
-        Status = OrderStatus.Cancelled;
     }
 }
