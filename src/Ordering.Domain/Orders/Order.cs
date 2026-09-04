@@ -100,6 +100,49 @@ public sealed class Order
     }
 
     /// <summary>
+    /// Removes a product line from this pending order.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the order is not pending or the product is absent.</exception>
+    public void RemoveItem(Guid productId)
+    {
+        EnsurePending();
+
+        var item = _items.FirstOrDefault(
+            item => item.ProductId == productId);
+
+        if (item is null)
+        {
+            throw new InvalidOperationException(
+                "Product does not exist in the order.");
+        }
+
+        _items.Remove(item);
+    }
+
+    /// <summary>
+    /// Replaces the quantity of an item in this pending order.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the order is not pending or the product is absent.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="quantity"/> is not positive.</exception>
+    public void ChangeItemQuantity(
+        Guid productId,
+        int quantity)
+    {
+        EnsurePending();
+
+        var item = _items.FirstOrDefault(
+            item => item.ProductId == productId);
+
+        if (item is null)
+        {
+            throw new InvalidOperationException(
+                "Product does not exist in the order.");
+        }
+
+        item.ChangeQuantity(quantity);
+    }
+
+    /// <summary>
     /// Confirms a non-empty pending order.
     /// </summary>
     /// <exception cref="InvalidOperationException">Thrown when the order is not pending or has no items.</exception>

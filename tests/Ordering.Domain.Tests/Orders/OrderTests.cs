@@ -35,18 +35,21 @@ public class OrderTests
     }
 
     [Fact]
-    public void AddItem_Should_Add_Item_And_Calculate_Total()
+    public void AddItem_Should_Add_Item_To_Order()
     {
         // Arrange
         var order = Order.Create(Guid.NewGuid());
+        var productId = Guid.NewGuid();
 
         // Act
-        order.AddItem(Guid.NewGuid(), "Product", 12.50m, 2);
+        order.AddItem(productId, "Laptop", 250_000m, 2);
 
         // Assert
         var item = Assert.Single(order.Items);
+        Assert.Equal(productId, item.ProductId);
         Assert.Equal(2, item.Quantity);
-        Assert.Equal(25m, order.TotalAmount);
+        Assert.Equal(500_000m, item.TotalPrice);
+        Assert.Equal(500_000m, order.TotalAmount);
     }
 
     [Fact]
@@ -80,6 +83,39 @@ public class OrderTests
     }
 
     [Fact]
+    public void RemoveItem_Should_Remove_Existing_Item()
+    {
+        // Arrange
+        var order = Order.Create(Guid.NewGuid());
+        var productId = Guid.NewGuid();
+        order.AddItem(productId, "Laptop", 250_000m, 2);
+
+        // Act
+        order.RemoveItem(productId);
+
+        // Assert
+        Assert.Empty(order.Items);
+        Assert.Equal(0m, order.TotalAmount);
+    }
+
+    [Fact]
+    public void ChangeItemQuantity_Should_Replace_Item_Quantity()
+    {
+        // Arrange
+        var order = Order.Create(Guid.NewGuid());
+        var productId = Guid.NewGuid();
+        order.AddItem(productId, "Laptop", 250_000m, 2);
+
+        // Act
+        order.ChangeItemQuantity(productId, 3);
+
+        // Assert
+        var item = Assert.Single(order.Items);
+        Assert.Equal(3, item.Quantity);
+        Assert.Equal(750_000m, order.TotalAmount);
+    }
+
+    [Fact]
     public void Cancel_Should_Change_Status_To_Cancelled()
     {
         // Arrange
@@ -99,6 +135,7 @@ public class OrderTests
         // Arrange
         var customerId = Guid.NewGuid();
         var order = Order.Create(customerId);
+        order.AddItem(Guid.NewGuid(), "Product", 10m, 1);
 
         order.Confirm();
 

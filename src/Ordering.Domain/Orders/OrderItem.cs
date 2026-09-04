@@ -102,4 +102,20 @@ public sealed class OrderItem
 
         Quantity += quantity;
     }
+
+    /// <summary>
+    /// Replaces the quantity for this order line.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="quantity"/> is not positive.</exception>
+    internal void ChangeQuantity(int quantity)
+    {
+        if (quantity <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(quantity),
+                "Quantity must be greater than zero.");
+        }
+
+        Quantity = quantity;
+    }
 }
