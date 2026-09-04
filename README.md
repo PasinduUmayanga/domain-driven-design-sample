@@ -1,5 +1,6 @@
 # domain-driven-design-sample
-<img width="2048" height="768" alt="image" src="https://github.com/user-attachments/assets/f97b2c1e-1f22-4d0c-8358-d4f1fdf0c23c" />
+
+![image](https://github.com/user-attachments/assets/f97b2c1e-1f22-4d0c-8358-d4f1fdf0c23c)
 
 # Step 1 — What is Domain-Driven Design?
 
@@ -11,8 +12,7 @@ Build your software around the business domain and business rules instead of aro
 
 For example
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/fead04cd-8239-4845-8a0b-96dda3f9de22" />
-
+![image](https://github.com/user-attachments/assets/fead04cd-8239-4845-8a0b-96dda3f9de22)
 
 ## What is a Domain?
 
@@ -24,7 +24,7 @@ Domain: Online Ordering
 
 Inside that domain we have concepts such as:
 
-<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/9e3b50a8-eb71-434d-b63c-5dc981704fdf" />
+![image](https://github.com/user-attachments/assets/9e3b50a8-eb71-434d-b63c-5dc981704fdf)
 
 These aren't programming concepts.
 
@@ -64,3 +64,54 @@ order.Confirm();
 ```
 
 Now the model represents actual business behavior.
+
+## Ubiquitous Language
+
+This is one of the most important DDD ideas.
+
+Developers and business people should use the same terminology.
+
+For our ordering domain, the shared language includes:
+
+![Ubiquitous Language in DDD](https://chatgpt.com/backend-api/estuary/content?id=file_00000000c92c82119bc999a7fdc6a895&ts=496819&p=fs&cid=1&sig=2ea237f85cf4ec31899dcae68c006a95c3f5c723982ed447b57c618dc0bf7b7b&v=0)
+
+The C# code should use exactly those concepts:
+
+```csharp
+order.AddItem(...);
+
+order.RemoveItem(...);
+
+order.Confirm();
+
+order.Cancel();
+```
+
+Avoid vague technical method names like:
+
+```csharp
+UpdateData();
+
+Process();
+
+ModifyRecord();
+```
+
+Using the same words in conversations, requirements, tests, and code is part of what DDD calls Ubiquitous Language.
+
+## First Business Rules
+
+Before writing code, let's define our ordering rules.
+
+We'll begin with these:
+
+1. An order belongs to one customer.
+2. An order starts in Pending status.
+3. A customer can add products while the order is Pending.
+4. Quantity must be greater than zero.
+5. Product price cannot be negative.
+6. A confirmed order cannot be modified.
+7. A cancelled order cannot be modified.
+8. An empty order cannot be confirmed.
+9. Order total is calculated from its items.
+10. An order can only be confirmed once.
