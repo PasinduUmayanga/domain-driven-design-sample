@@ -142,3 +142,17 @@ Now create projects:
 
 <img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/0d33e752-ceb2-4a7a-b2db-73d2518aaa3f" />
 
+
+Add project references
+
+
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/5dc9cb14-fc4c-4eda-a741-936829ffa75a" />
+
+
+Check the dependency structure
+
+You should now have approximately:
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/3e5bc502-61f9-4d3d-96d7-7efbf8087537" />
+
+
+
