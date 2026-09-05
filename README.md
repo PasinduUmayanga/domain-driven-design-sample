@@ -1,5 +1,19 @@
 # domain-driven-design-sample
 
+[![Build status](https://ci.appveyor.com/api/projects/status/github/PasinduUmayanga/domain-driven-design-sample?branch=main&svg=true)](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample/branch/main)
+[![Build History](https://img.shields.io/badge/AppVeyor-Build%20History-blue?logo=appveyor)](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample/history)
+
+![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-512BD4?logo=dotnet&logoColor=white)
+![OpenAPI](https://img.shields.io/badge/Microsoft.AspNetCore.OpenApi-10.0.11-512BD4?logo=dotnet&logoColor=white)
+![xUnit](https://img.shields.io/badge/xUnit-2.9.3-5A3E85)
+
+Related links:
+
+- [GitHub repository](https://github.com/PasinduUmayanga/domain-driven-design-sample)
+- [AppVeyor project](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample)
+- [AppVeyor build history](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample/history)
+
 ![image](https://github.com/user-attachments/assets/f97b2c1e-1f22-4d0c-8358-d4f1fdf0c23c)
 
 # Step 1 — What is Domain-Driven Design?
@@ -389,3 +403,146 @@ Order.Create(customerId);
 ```
 
 Key idea: private constructors prevent uncontrolled object creation and help keep the entity valid.
+
+## Step 4 - Add Behaviour to the Entity
+
+In DDD, an Entity should contain both data and business behaviour.
+
+Instead of directly changing:
+
+```csharp
+order.Status = OrderStatus.Confirmed;
+```
+
+We expose meaningful business operations:
+
+```csharp
+order.Confirm();
+order.Cancel();
+```
+
+### Add Business Behaviour
+
+```csharp
+public void Confirm()
+{
+    if (Status != OrderStatus.Pending)
+    {
+        throw new InvalidOperationException(
+            "Only pending orders can be confirmed.");
+    }
+
+    Status = OrderStatus.Confirmed;
+}
+
+public void Cancel()
+{
+    if (Status != OrderStatus.Pending)
+    {
+        throw new InvalidOperationException(
+            "Only pending orders can be cancelled.");
+    }
+
+    Status = OrderStatus.Cancelled;
+}
+```
+
+These methods protect the Entity by enforcing business rules.
+
+For example:
+
+```text
+Pending -> Confirmed   OK
+Pending -> Cancelled   OK
+Confirmed -> Cancelled Not allowed
+Cancelled -> Confirmed Not allowed
+```
+
+### Usage
+
+```csharp
+var order = Order.Create(customerId);
+
+order.Confirm();
+```
+
+### Why Is This Important?
+
+Data-focused code changes a value directly:
+
+```csharp
+order.Status = OrderStatus.Confirmed;
+```
+
+That means:
+
+```text
+Set the status value.
+```
+
+DDD behaviour-focused code uses a business operation:
+
+```csharp
+order.Confirm();
+```
+
+That means:
+
+```text
+Confirm the order.
+```
+
+This makes the code reflect the business language and keeps business rules inside the Domain.
+
+DDD principle: Entities should not just store data. They should contain the business behaviour that controls how their state can change.
+
+### Business Rule Example - Domain Invariant
+
+In DDD, an Entity should protect its business rules.
+
+Consider:
+
+```csharp
+var order = Order.Create(customerId);
+
+order.Confirm();
+order.Cancel(); // Exception
+```
+
+After `Confirm()`:
+
+```text
+Status = Confirmed
+```
+
+But our `Cancel()` rule requires:
+
+```text
+Only Pending orders can be cancelled.
+```
+
+Therefore, calling `Cancel()` throws:
+
+```text
+Only pending orders can be cancelled.
+```
+
+### What Is a Domain Invariant?
+
+A Domain Invariant is:
+
+```text
+A business rule that must always remain true.
+```
+
+For our `Order`:
+
+```text
+Pending -> Confirmed   OK
+Pending -> Cancelled   OK
+Confirmed -> Cancelled Not allowed
+```
+
+The `Order` Entity itself enforces these rules.
+
+DDD principle: keep important business rules inside the Domain so an Entity cannot enter an invalid state.
