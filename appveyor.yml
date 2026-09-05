@@ -12,6 +12,8 @@ clone_folder: c:\projects\domain-driven-design-sample
 
 environment:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_GENERATE_ASPNET_CERTIFICATE: false
+  DOTNET_NOLOGO: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_INSTALL_DIR: C:\Users\appveyor\.dotnet
   DOTNET_ROOT: C:\Users\appveyor\.dotnet
@@ -29,15 +31,15 @@ install:
       dotnet --version
 
 before_build:
-  - ps: dotnet --info
-  - ps: dotnet restore OrderingSystem.slnx
+  - dotnet --info
+  - dotnet restore OrderingSystem.slnx
 
 build_script:
-  - ps: dotnet build OrderingSystem.slnx --configuration Release --no-restore
+  - dotnet build OrderingSystem.slnx --configuration Release --no-restore
 
 test_script:
-  - ps: dotnet test tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
-  - ps: dotnet test tests/Ordering.Application.Tests/Ordering.Application.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
+  - dotnet test tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
+  - dotnet test tests/Ordering.Application.Tests/Ordering.Application.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
 
 artifacts:
   - path: tests/**/TestResults/*.trx
