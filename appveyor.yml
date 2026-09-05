@@ -17,7 +17,11 @@ environment:
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   DOTNET_INSTALL_DIR: C:\Users\appveyor\.dotnet
   DOTNET_ROOT: C:\Users\appveyor\.dotnet
+  NUGET_PACKAGES: C:\projects\nuget-packages
   PATH: C:\Users\appveyor\.dotnet;%PATH%
+
+cache:
+  - C:\projects\nuget-packages -> **\*.csproj, **\packages.lock.json
 
 skip_commits:
   files:

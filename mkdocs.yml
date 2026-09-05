@@ -1,0 +1,10 @@
+site_name: Domain-Driven Design Sample
+site_description: A learning-oriented .NET ordering system built with Domain-Driven Design concepts.
+repo_url: https://github.com/PasinduUmayanga/domain-driven-design-sample
+repo_name: PasinduUmayanga/domain-driven-design-sample
+
+nav:
+  - Home: index.md
+
+theme:
+  name: readthedocs
