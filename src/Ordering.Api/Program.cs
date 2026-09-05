@@ -10,6 +10,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
+    // Keep this endpoint dependency-free so deployment probes can use it.
     .WithName("GetHealth");
 
 app.UseHttpsRedirection();

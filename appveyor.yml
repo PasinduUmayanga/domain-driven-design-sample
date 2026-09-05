@@ -1,0 +1,35 @@
+version: 1.0.{build}
+
+image: Visual Studio 2022
+
+configuration: Release
+
+branches:
+  only:
+    - main
+
+clone_folder: c:\projects\domain-driven-design-sample
+
+environment:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+skip_commits:
+  files:
+    - README.md
+    - AGENTS.md
+
+before_build:
+  - ps: dotnet --info
+  - ps: dotnet restore OrderingSystem.slnx
+
+build_script:
+  - ps: dotnet build OrderingSystem.slnx --configuration Release --no-restore
+
+test_script:
+  - ps: dotnet test tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
+  - ps: dotnet test tests/Ordering.Application.Tests/Ordering.Application.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
+
+artifacts:
+  - path: tests/**/TestResults/*.trx
+    name: test-results
