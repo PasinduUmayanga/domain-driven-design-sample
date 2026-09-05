@@ -1,6 +1,6 @@
 version: 1.0.{build}
 
-image: Visual Studio 2022
+image: Visual Studio 2026
 
 configuration: Release
 
@@ -13,11 +13,20 @@ clone_folder: c:\projects\domain-driven-design-sample
 environment:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_INSTALL_DIR: C:\Users\appveyor\.dotnet
+  DOTNET_ROOT: C:\Users\appveyor\.dotnet
+  PATH: C:\Users\appveyor\.dotnet;%PATH%
 
 skip_commits:
   files:
     - README.md
     - AGENTS.md
+
+install:
+  - ps: |
+      Invoke-WebRequest https://dot.net/v1/dotnet-install.ps1 -OutFile dotnet-install.ps1
+      .\dotnet-install.ps1 -Channel 10.0 -InstallDir $env:DOTNET_INSTALL_DIR
+      dotnet --version
 
 before_build:
   - ps: dotnet --info
