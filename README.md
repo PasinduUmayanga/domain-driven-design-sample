@@ -1,7 +1,7 @@
 # domain-driven-design-sample
 
-[![Build status](https://ci.appveyor.com/api/projects/status/github/PasinduUmayanga/domain-driven-design-sample?branch=main&svg=true)](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample/branch/main)
-[![Build History](https://img.shields.io/badge/AppVeyor-Build%20History-blue?logo=appveyor)](https://ci.appveyor.com/project/PasinduUmayanga/domain-driven-design-sample/history)
+[![Build status](https://ci.appveyor.com/api/projects/status/ph5kr4120pudw80n/branch/main?svg=true)](https://ci.appveyor.com/project/Mahadenamuththa/domain-driven-design-sample/branch/main)
+[![Build History](https://img.shields.io/badge/AppVeyor-Build%20History-blue?logo=appveyor)](https://ci.appveyor.com/project/Mahadenamuththa/domain-driven-design-sample/history)
 
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white)
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-10.0-512BD4?logo=dotnet&logoColor=white)
