@@ -546,3 +546,297 @@ Confirmed -> Cancelled Not allowed
 The `Order` Entity itself enforces these rules.
 
 DDD principle: keep important business rules inside the Domain so an Entity cannot enter an invalid state.
+
+# Step 5 - Add Order Items and Totals
+
+The order aggregate is complete when it can protect both its lifecycle and its line items.
+
+Add `OrderItem.cs` inside `src/Ordering.Domain/Orders`.
+
+An order item captures:
+
+- Product ID
+- Product name
+- Unit price
+- Quantity
+- Line total
+
+The item validates its own rules:
+
+- Product ID cannot be empty.
+- Product name cannot be empty.
+- Unit price cannot be negative.
+- Quantity must be greater than zero.
+
+The `Order` aggregate owns the item collection. Code outside the aggregate can read `Items`, but it cannot directly replace or mutate the collection.
+
+```csharp
+private readonly List<OrderItem> _items = [];
+
+public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
+
+public decimal TotalAmount =>
+    _items.Sum(item => item.TotalPrice);
+```
+
+Expose behaviour instead of setters:
+
+```csharp
+order.AddItem(productId, "Laptop", 250_000m, 2);
+
+order.ChangeItemQuantity(productId, 3);
+
+order.RemoveItem(productId);
+```
+
+This keeps the business rules inside the aggregate. A confirmed or cancelled order cannot be modified because each item-changing operation checks that the order is still pending.
+
+# Step 6 - Add the Application Layer
+
+The Application layer contains use cases. It coordinates the domain model but does not contain HTTP or database code.
+
+Create this structure:
+
+```text
+src/Ordering.Application
+|-- Abstractions
+|   `-- Persistence
+|       `-- IOrderRepository.cs
+|-- Orders
+|   |-- AddOrderItemRequest.cs
+|   |-- ChangeOrderItemQuantityRequest.cs
+|   |-- CreateOrderRequest.cs
+|   |-- OrderItemResponse.cs
+|   `-- OrderResponse.cs
+`-- Services
+    `-- OrderService.cs
+```
+
+`IOrderRepository` is a port owned by the Application layer:
+
+```csharp
+public interface IOrderRepository
+{
+    Task AddAsync(Order order, CancellationToken cancellationToken = default);
+
+    Task<Order?> GetByIdAsync(Guid orderId, CancellationToken cancellationToken = default);
+
+    Task SaveAsync(Order order, CancellationToken cancellationToken = default);
+}
+```
+
+The important Clean Architecture rule is:
+
+```text
+Application defines what it needs.
+Infrastructure decides how to provide it.
+```
+
+`OrderService` uses the repository abstraction and the domain aggregate:
+
+```csharp
+var order = await orderRepository.GetByIdAsync(orderId, cancellationToken);
+
+order.AddItem(
+    request.ProductId,
+    request.ProductName,
+    request.UnitPrice,
+    request.Quantity);
+
+await orderRepository.SaveAsync(order, cancellationToken);
+```
+
+The service does not calculate totals itself. It asks the domain model to perform business behaviour, then returns a response DTO.
+
+# Step 7 - Add the Infrastructure Layer
+
+Infrastructure contains technical adapters.
+
+For this sample, use an in-memory repository so the application can run without a database:
+
+```text
+src/Ordering.Infrastructure
+|-- DependencyInjection.cs
+`-- Orders
+    `-- InMemoryOrderRepository.cs
+```
+
+`InMemoryOrderRepository` implements the Application layer's `IOrderRepository` port.
+
+The Infrastructure project may reference Application and Domain:
+
+```text
+Ordering.Infrastructure -> Ordering.Application
+Ordering.Infrastructure -> Ordering.Domain
+```
+
+But Application must not reference Infrastructure.
+
+Add a dependency registration method in `DependencyInjection.cs`:
+
+```csharp
+public static IServiceCollection AddOrderingInfrastructure(this IServiceCollection services)
+{
+    services.AddSingleton<IOrderRepository, InMemoryOrderRepository>();
+
+    return services;
+}
+```
+
+# Step 8 - Add API Endpoints
+
+The API project is the composition root. It wires dependencies and exposes HTTP endpoints.
+
+Keep `Program.cs` small:
+
+```csharp
+builder.Services.AddOrderingInfrastructure();
+builder.Services.AddScoped<OrderService>();
+
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
+
+app.MapOrderEndpoints();
+```
+
+Put order endpoint mappings in a separate file:
+
+```text
+src/Ordering.Api
+|-- Endpoints
+|   `-- OrderEndpoints.cs
+`-- Program.cs
+```
+
+`OrderEndpoints.cs` maps the HTTP workflow:
+
+```http
+POST /orders
+GET /orders/{orderId}
+POST /orders/{orderId}/items
+PATCH /orders/{orderId}/items/{productId}
+DELETE /orders/{orderId}/items/{productId}
+POST /orders/{orderId}/confirm
+POST /orders/{orderId}/cancel
+```
+
+The endpoint file should call `OrderService`; it should not contain business rules. For example, the endpoint asks the service to confirm the order, and the `Order` aggregate decides whether confirmation is valid.
+
+# Step 9 - Add Tests
+
+Tests should follow the layer being tested.
+
+Domain tests verify business rules directly:
+
+- Creating an order starts in `Pending`.
+- Empty orders cannot be confirmed.
+- Confirmed orders cannot be cancelled.
+- Cancelled orders cannot be confirmed.
+- Confirmed or cancelled orders cannot be modified.
+- Totals come from order items.
+
+Application tests verify orchestration:
+
+- `CreateAsync` creates a pending order.
+- `AddItemAsync` saves item changes and returns updated totals.
+- `ConfirmAsync` confirms a non-empty order.
+- Missing orders throw `KeyNotFoundException`.
+
+Application tests use a fake repository inside the test project. They should not depend on Infrastructure.
+
+# Step 10 - Run and Verify
+
+Build the solution:
+
+```powershell
+dotnet build OrderingSystem.slnx
+```
+
+Run the tests:
+
+```powershell
+dotnet test OrderingSystem.slnx
+```
+
+Run the API:
+
+```powershell
+dotnet run --project src/Ordering.Api
+```
+
+Check the health endpoint:
+
+```http
+GET /health
+```
+
+# Step 11 - Complete Ordering Workflow
+
+The sample now includes a small end-to-end order workflow around the domain model:
+
+- `Ordering.Domain` owns the `Order` aggregate, item rules, totals, and lifecycle transitions.
+- `Ordering.Application` exposes use cases through `Services/OrderService` and owns the `IOrderRepository` port under `Abstractions/Persistence`.
+- `Ordering.Infrastructure` provides the in-memory repository adapter for the sample.
+- `Ordering.Api` is the composition root and exposes HTTP endpoints for creating, editing, confirming, and cancelling orders.
+
+The API uses Infrastructure's in-memory repository so the sample can run without a database while still keeping dependencies pointed inward.
+
+## Run the API
+
+From the repository root:
+
+```powershell
+dotnet run --project src/Ordering.Api
+```
+
+Check the health endpoint:
+
+```http
+GET /health
+```
+
+## Order Endpoints
+
+Create an order:
+
+```http
+POST /orders
+Content-Type: application/json
+
+{
+  "customerId": "11111111-1111-1111-1111-111111111111"
+}
+```
+
+Add an item:
+
+```http
+POST /orders/{orderId}/items
+Content-Type: application/json
+
+{
+  "productId": "22222222-2222-2222-2222-222222222222",
+  "productName": "Laptop",
+  "unitPrice": 250000,
+  "quantity": 2
+}
+```
+
+Change an item quantity:
+
+```http
+PATCH /orders/{orderId}/items/{productId}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+```
+
+Complete the order lifecycle:
+
+```http
+POST /orders/{orderId}/confirm
+POST /orders/{orderId}/cancel
+```
+
+Important rules are still enforced by the domain model. Empty orders cannot be confirmed, non-pending orders cannot be modified, quantities must be positive, and prices cannot be negative.
