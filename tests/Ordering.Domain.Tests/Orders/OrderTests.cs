@@ -145,4 +145,47 @@ public class OrderTests
         // Assert
         Assert.Throws<InvalidOperationException>(action);
     }
+
+    [Fact]
+    public void Cancel_Should_Throw_When_Order_Is_Already_Confirmed()
+    {
+        // Arrange
+        var order = Order.Create(Guid.NewGuid());
+        order.AddItem(Guid.NewGuid(), "Product", 10m, 1);
+        order.Confirm();
+
+        // Act
+        var action = () => order.Cancel();
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void Confirm_Should_Throw_When_Order_Is_Cancelled()
+    {
+        // Arrange
+        var order = Order.Create(Guid.NewGuid());
+        order.Cancel();
+
+        // Act
+        var action = () => order.Confirm();
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(action);
+    }
+
+    [Fact]
+    public void AddItem_Should_Throw_When_Order_Is_Cancelled()
+    {
+        // Arrange
+        var order = Order.Create(Guid.NewGuid());
+        order.Cancel();
+
+        // Act
+        var action = () => order.AddItem(Guid.NewGuid(), "Product", 10m, 1);
+
+        // Assert
+        Assert.Throws<InvalidOperationException>(action);
+    }
 }
