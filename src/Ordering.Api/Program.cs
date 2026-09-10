@@ -7,7 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddOrderingInfrastructure();
+builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
+builder.Services.AddScoped<ProductService>();
 
 var app = builder.Build();
 
@@ -45,6 +47,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
     .WithName("GetHealth");
 
 app.MapOrderEndpoints();
+app.MapCustomerEndpoints();
+app.MapProductEndpoints();
 
 app.UseHttpsRedirection();
 
