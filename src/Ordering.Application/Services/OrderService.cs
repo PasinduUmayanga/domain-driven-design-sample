@@ -4,7 +4,10 @@ using Ordering.Domain.Orders;
 
 namespace Ordering.Application.Services;
 
-public sealed class OrderService(IOrderRepository orderRepository)
+public sealed class OrderService(
+    IOrderRepository orderRepository,
+    ICustomerRepository customerRepository,
+    IProductRepository productRepository)
 {
     public async Task<OrderResponse> CreateAsync(
         CreateOrderRequest request,
@@ -12,7 +15,21 @@ public sealed class OrderService(IOrderRepository orderRepository)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var order = Order.Create(request.CustomerId);
+        var customer = await customerRepository.GetByIdAsync(
+            request.CustomerId,
+            cancellationToken);
+
+        if (customer is null)
+        {
+            throw new KeyNotFoundException("Customer was not found.");
+        }
+
+        if (!customer.IsActive)
+        {
+            throw new InvalidOperationException("Inactive customers cannot place orders.");
+        }
+
+        var order = Order.Create(customer.Id);
 
         await orderRepository.AddAsync(order, cancellationToken);
 
@@ -37,10 +54,24 @@ public sealed class OrderService(IOrderRepository orderRepository)
 
         var order = await GetOrderAsync(orderId, cancellationToken);
 
-        order.AddItem(
+        var product = await productRepository.GetByIdAsync(
             request.ProductId,
-            request.ProductName,
-            request.UnitPrice,
+            cancellationToken);
+
+        if (product is null)
+        {
+            throw new KeyNotFoundException("Product was not found.");
+        }
+
+        if (!product.IsAvailable)
+        {
+            throw new InvalidOperationException("Unavailable products cannot be added to orders.");
+        }
+
+        order.AddItem(
+            product.Id,
+            product.Name,
+            product.UnitPrice,
             request.Quantity);
 
         await orderRepository.SaveAsync(order, cancellationToken);

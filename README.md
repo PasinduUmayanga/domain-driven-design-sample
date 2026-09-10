@@ -44,6 +44,13 @@ These aren't programming concepts.
 
 They are business concepts.
 
+In this sample, the main domain concepts are:
+
+- `Customer` - a person who can place orders.
+- `Product` - an item that can be added to an order.
+- `Order` - a customer's purchase request.
+- `OrderItem` - a product line captured inside an order.
+
 DDD tries to represent these concepts directly in code.
 
 For example:
@@ -130,6 +137,9 @@ We'll begin with these:
 8. An empty order cannot be confirmed.
 9. Order total is calculated from its items.
 10. An order can only be confirmed once.
+11. A customer must be active before placing an order.
+12. A product must be available before it can be added to an order.
+13. Orders capture the product name and price at the time the item is added.
 
 # Step 2 — Create our .NET 10 solution
 ## Initial Architecture
@@ -710,6 +720,15 @@ src/Ordering.Api
 `OrderEndpoints.cs` maps the HTTP workflow:
 
 ```http
+POST /customers
+GET /customers/{customerId}
+PUT /customers/{customerId}
+POST /customers/{customerId}/deactivate
+POST /products
+GET /products/{productId}
+PUT /products/{productId}
+POST /products/{productId}/mark-unavailable
+POST /products/{productId}/mark-available
 POST /orders
 GET /orders/{orderId}
 POST /orders/{orderId}/items
@@ -727,6 +746,10 @@ Tests should follow the layer being tested.
 
 Domain tests verify business rules directly:
 
+- Customers require valid names and emails.
+- Inactive customers cannot be modified.
+- Products require valid names and non-negative prices.
+- Product availability transitions are explicit.
 - Creating an order starts in `Pending`.
 - Empty orders cannot be confirmed.
 - Confirmed orders cannot be cancelled.
@@ -773,10 +796,11 @@ GET /health
 
 The sample now includes a small end-to-end order workflow around the domain model:
 
-- `Ordering.Domain` owns the `Order` aggregate, item rules, totals, and lifecycle transitions.
-- `Ordering.Application` exposes use cases through `Services/OrderService` and owns the `IOrderRepository` port under `Abstractions/Persistence`.
-- `Ordering.Infrastructure` provides the in-memory repository adapter for the sample.
-- `Ordering.Api` is the composition root and exposes HTTP endpoints for creating, editing, confirming, and cancelling orders.
+- `Ordering.Domain` owns the `Customer`, `Product`, and `Order` aggregates.
+- `Ordering.Application` exposes use cases through `Services/CustomerService`, `Services/ProductService`, and `Services/OrderService`.
+- `Ordering.Application` owns persistence ports under `Abstractions/Persistence`.
+- `Ordering.Infrastructure` provides in-memory repository adapters for the sample.
+- `Ordering.Api` is the composition root and exposes HTTP endpoints for customers, products, and orders.
 
 The API uses Infrastructure's in-memory repository so the sample can run without a database while still keeping dependencies pointed inward.
 
@@ -795,6 +819,30 @@ GET /health
 ```
 
 ## Order Endpoints
+
+Create a customer:
+
+```http
+POST /customers
+Content-Type: application/json
+
+{
+  "name": "Ada Lovelace",
+  "email": "ada@example.com"
+}
+```
+
+Create a product:
+
+```http
+POST /products
+Content-Type: application/json
+
+{
+  "name": "Laptop",
+  "unitPrice": 250000
+}
+```
 
 Create an order:
 
@@ -815,8 +863,6 @@ Content-Type: application/json
 
 {
   "productId": "22222222-2222-2222-2222-222222222222",
-  "productName": "Laptop",
-  "unitPrice": 250000,
   "quantity": 2
 }
 ```
@@ -839,4 +885,4 @@ POST /orders/{orderId}/confirm
 POST /orders/{orderId}/cancel
 ```
 
-Important rules are still enforced by the domain model. Empty orders cannot be confirmed, non-pending orders cannot be modified, quantities must be positive, and prices cannot be negative.
+Important rules are still enforced by the domain model and orchestrated by the application layer. Empty orders cannot be confirmed, non-pending orders cannot be modified, inactive customers cannot place orders, unavailable products cannot be added to orders, quantities must be positive, and prices cannot be negative.
