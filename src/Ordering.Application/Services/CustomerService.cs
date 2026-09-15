@@ -37,8 +37,7 @@ public sealed class CustomerService(ICustomerRepository customerRepository)
 
         var customer = await GetCustomerAsync(customerId, cancellationToken);
 
-        customer.ChangeName(request.Name);
-        customer.ChangeEmail(request.Email);
+        customer.UpdateProfile(request.Name, request.Email);
 
         await customerRepository.SaveAsync(customer, cancellationToken);
 

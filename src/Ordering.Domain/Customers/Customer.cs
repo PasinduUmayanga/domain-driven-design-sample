@@ -50,6 +50,16 @@ public sealed class Customer : Ordering.Domain.Common.AggregateRoot
         Email = email.Trim();
     }
 
+    public void UpdateProfile(string name, string email)
+    {
+        EnsureActive();
+        ValidateName(name);
+        ValidateEmail(email);
+
+        Name = name.Trim();
+        Email = email.Trim();
+    }
+
     public void Deactivate()
     {
         EnsureActive();

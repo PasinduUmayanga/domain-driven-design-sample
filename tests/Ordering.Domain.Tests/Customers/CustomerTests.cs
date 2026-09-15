@@ -33,4 +33,27 @@ public class CustomerTests
 
         Assert.Throws<InvalidOperationException>(action);
     }
+
+    [Fact]
+    public void UpdateProfile_Should_Modify_Name_And_Email()
+    {
+        var customer = Customer.Register("Ada Lovelace", "ada@example.com");
+
+        customer.UpdateProfile("Grace Hopper", "grace@example.com");
+
+        Assert.Equal("Grace Hopper", customer.Name);
+        Assert.Equal("grace@example.com", customer.Email);
+    }
+
+    [Fact]
+    public void UpdateProfile_Should_Not_Partially_Modify_When_Email_Is_Invalid()
+    {
+        var customer = Customer.Register("Ada Lovelace", "ada@example.com");
+
+        var action = () => customer.UpdateProfile("Grace Hopper", "not-an-email");
+
+        Assert.Throws<ArgumentException>(action);
+        Assert.Equal("Ada Lovelace", customer.Name);
+        Assert.Equal("ada@example.com", customer.Email);
+    }
 }
