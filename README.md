@@ -51,6 +51,110 @@ In this sample, the main domain concepts are:
 - `Order` - a customer's purchase request.
 - `OrderItem` - a product line captured inside an order.
 
+## Aggregate Roots in This Repository
+
+For this learning project, aggregate roots stay in the same `Ordering.Domain` project.
+They are separated by folders and namespaces, not by separate projects:
+
+```text
+src/Ordering.Domain
+|-- Common
+|   |-- AggregateRoot.cs
+|   `-- Entity.cs
+|-- Customers
+|   `-- Customer.cs
+|-- Orders
+|   |-- Order.cs
+|   |-- OrderItem.cs
+|   `-- OrderStatus.cs
+`-- Products
+    `-- Product.cs
+```
+
+Use a separate project for the whole Domain layer, not for each aggregate root.
+This keeps the DDD boundary clear while keeping the sample easy to understand.
+
+In this sample:
+
+- `Customer`, `Product`, and `Order` are aggregate roots.
+- `OrderItem` is an entity inside the `Order` aggregate.
+- Application code loads and saves aggregate roots through repositories.
+- Child entities such as `OrderItem` do not get their own repositories.
+
+Correct usage:
+
+```csharp
+var order = await orderRepository.GetByIdAsync(orderId, cancellationToken);
+
+order.AddItem(product.Id, product.Name, product.UnitPrice, quantity);
+
+await orderRepository.SaveAsync(order, cancellationToken);
+```
+
+Avoid this style:
+
+```csharp
+// Do not create an OrderItem repository.
+// Do not update order items directly from application code.
+await orderItemRepository.SaveAsync(orderItem, cancellationToken);
+```
+
+The aggregate root protects the consistency boundary. For an order, that means
+all item changes go through `Order`, so `Order` can enforce rules like:
+
+- Only pending orders can be modified.
+- Quantities must be positive.
+- An empty order cannot be confirmed.
+- The total is calculated from the order items.
+
+## Domain Events with Aggregate Roots
+
+A domain event describes something important that already happened in the
+domain. Aggregate roots record these events while enforcing business rules.
+
+In this sample, `AggregateRoot` stores pending domain events:
+
+```csharp
+public abstract class AggregateRoot : Entity
+{
+    private readonly List<IDomainEvent> _domainEvents = [];
+
+    public IReadOnlyCollection<IDomainEvent> DomainEvents =>
+        _domainEvents.AsReadOnly();
+
+    protected void RaiseDomainEvent(IDomainEvent domainEvent)
+    {
+        _domainEvents.Add(domainEvent);
+    }
+
+    public void ClearDomainEvents()
+    {
+        _domainEvents.Clear();
+    }
+}
+```
+
+`Order` raises events after successful business operations:
+
+```csharp
+var order = Order.Create(customerId);
+
+order.AddItem(product.Id, product.Name, product.UnitPrice, quantity);
+
+order.Confirm();
+```
+
+Those operations can record events such as:
+
+- `OrderCreatedDomainEvent`
+- `OrderItemAddedDomainEvent`
+- `OrderConfirmedDomainEvent`
+- `OrderCancelledDomainEvent`
+
+Important: the aggregate records events, but this sample does not dispatch them
+yet. A later application or infrastructure step can publish pending events after
+the aggregate is saved, then call `ClearDomainEvents()`.
+
 DDD tries to represent these concepts directly in code.
 
 For example:

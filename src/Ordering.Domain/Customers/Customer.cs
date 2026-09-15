@@ -3,10 +3,8 @@ namespace Ordering.Domain.Customers;
 /// <summary>
 /// Represents a customer who can place orders.
 /// </summary>
-public sealed class Customer
+public sealed class Customer : Ordering.Domain.Common.AggregateRoot
 {
-    public Guid Id { get; private set; }
-
     public string Name { get; private set; } = string.Empty;
 
     public string Email { get; private set; } = string.Empty;

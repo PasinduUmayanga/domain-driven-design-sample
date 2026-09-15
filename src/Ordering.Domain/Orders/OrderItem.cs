@@ -3,13 +3,8 @@ namespace Ordering.Domain.Orders;
 /// <summary>
 /// Represents a product line within an order.
 /// </summary>
-public sealed class OrderItem
+public sealed class OrderItem : Ordering.Domain.Common.Entity
 {
-    /// <summary>
-    /// Gets the identity assigned when the line item is created.
-    /// </summary>
-    public Guid Id { get; private set; }
-
     /// <summary>
     /// Gets the identity of the product being ordered.
     /// </summary>

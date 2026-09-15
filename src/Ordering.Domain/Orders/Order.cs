@@ -1,13 +1,8 @@
 ﻿namespace Ordering.Domain.Orders;
 
-public sealed class Order
+public sealed class Order : Ordering.Domain.Common.AggregateRoot
 {
     private readonly List<OrderItem> _items = [];
-
-    /// <summary>
-    /// Gets the identity assigned when the order is created.
-    /// </summary>
-    public Guid Id { get; private set; }
 
     /// <summary>
     /// Gets the customer that owns this order.
@@ -62,9 +57,18 @@ public sealed class Order
                 nameof(customerId));
         }
 
-        return new Order(
+        var order = new Order(
             Guid.NewGuid(),
             customerId);
+
+        // Record the event after the order has been initialized in a valid state.
+        order.RaiseDomainEvent(
+            new Events.OrderCreatedDomainEvent(
+                order.Id,
+                order.CustomerId,
+                DateTime.UtcNow));
+
+        return order;
     }
 
     /// <summary>
@@ -87,6 +91,15 @@ public sealed class Order
         if (existingItem is not null)
         {
             existingItem.IncreaseQuantity(quantity);
+            // The aggregate records that this operation added more product units.
+            RaiseDomainEvent(
+                new Events.OrderItemAddedDomainEvent(
+                    Id,
+                    productId,
+                    productName,
+                    unitPrice,
+                    quantity,
+                    DateTime.UtcNow));
             return;
         }
 
@@ -97,6 +110,15 @@ public sealed class Order
             quantity);
 
         _items.Add(orderItem);
+        // The event captures the product snapshot stored on the order item.
+        RaiseDomainEvent(
+            new Events.OrderItemAddedDomainEvent(
+                Id,
+                productId,
+                productName,
+                unitPrice,
+                quantity,
+                DateTime.UtcNow));
     }
 
     /// <summary>
@@ -157,6 +179,13 @@ public sealed class Order
         }
 
         Status = OrderStatus.Confirmed;
+        // Record confirmation only after all confirmation invariants have passed.
+        RaiseDomainEvent(
+            new Events.OrderConfirmedDomainEvent(
+                Id,
+                CustomerId,
+                TotalAmount,
+                DateTime.UtcNow));
     }
 
     /// <summary>
@@ -168,6 +197,12 @@ public sealed class Order
         EnsurePending();
 
         Status = OrderStatus.Cancelled;
+        // Record cancellation only after the lifecycle transition succeeds.
+        RaiseDomainEvent(
+            new Events.OrderCancelledDomainEvent(
+                Id,
+                CustomerId,
+                DateTime.UtcNow));
     }
 
     private void EnsurePending()

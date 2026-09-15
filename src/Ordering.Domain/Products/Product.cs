@@ -3,10 +3,8 @@ namespace Ordering.Domain.Products;
 /// <summary>
 /// Represents a product that can be added to an order.
 /// </summary>
-public sealed class Product
+public sealed class Product : Ordering.Domain.Common.AggregateRoot
 {
-    public Guid Id { get; private set; }
-
     public string Name { get; private set; } = string.Empty;
 
     public decimal UnitPrice { get; private set; }
