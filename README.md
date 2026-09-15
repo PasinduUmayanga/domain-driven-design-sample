@@ -17,6 +17,7 @@ This repository is a learning-focused .NET sample for Domain-Driven Design (DDD)
 - [Solution Structure](#solution-structure)
 - [Architecture Rules](#architecture-rules)
 - [Domain Model](#domain-model)
+- [Value Objects](#value-objects)
 - [Aggregate Roots](#aggregate-roots)
 - [Domain Events](#domain-events)
 - [Business Rules](#business-rules)
@@ -125,6 +126,11 @@ The main domain model lives in `src/Ordering.Domain`.
 ```text
 src/Ordering.Domain
 |-- Common
+|   |-- ValueObjects
+|   |   |-- Email.cs
+|   |   |-- Money.cs
+|   |   |-- ProductName.cs
+|   |   `-- Quantity.cs
 |   |-- AggregateRoot.cs
 |   |-- Entity.cs
 |   `-- IDomainEvent.cs
@@ -178,6 +184,50 @@ order.Status = OrderStatus.Confirmed;
 ```
 
 The method name represents business language and gives the domain model a place to enforce rules.
+
+## Value Objects
+
+A value object is identified by its values, not by a separate identity.
+
+Examples:
+
+```text
+Email("ada@example.com") == Email("ada@example.com")
+Money(250000) == Money(250000)
+Quantity(2) == Quantity(2)
+```
+
+This sample includes these value objects:
+
+| Value Object | Purpose |
+| --- | --- |
+| `Email` | Validates and stores a customer email address. |
+| `Money` | Ensures price and money amounts are not negative. |
+| `ProductName` | Ensures product names are not empty and trims input. |
+| `Quantity` | Ensures item quantities are greater than zero. |
+
+Value objects keep small rules close to the values they protect. For example, `Quantity` owns the rule that quantity must be positive:
+
+```csharp
+public readonly record struct Quantity
+{
+    public int Value { get; }
+
+    public static Quantity Create(int value)
+    {
+        if (value <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(value),
+                "Quantity must be greater than zero.");
+        }
+
+        return new Quantity(value);
+    }
+}
+```
+
+The API still accepts simple JSON values such as strings, decimals, and integers. The Domain layer converts those values into value objects before storing or using them.
 
 ## Aggregate Roots
 
@@ -682,6 +732,7 @@ Domain tests verify business rules directly:
 - Customer validation and inactive customer behavior.
 - Product validation and availability behavior.
 - Order lifecycle and item behavior.
+- Value object validation and equality.
 - Aggregate root architecture.
 - Domain event recording.
 
@@ -703,7 +754,9 @@ dotnet test
 Use this checklist while reading the code:
 
 - Start with `Ordering.Domain/Common`.
+- Read `Ordering.Domain/Common/ValueObjects`.
 - Read `Customer`, `Product`, and `Order`.
+- Find where simple API values become value objects.
 - Notice which classes are aggregate roots.
 - Notice that `OrderItem` has no repository.
 - Read application services after the domain model.

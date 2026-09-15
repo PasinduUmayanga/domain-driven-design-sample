@@ -1,3 +1,5 @@
+using EmailAddress = Ordering.Domain.Common.ValueObjects.Email;
+
 namespace Ordering.Domain.Customers;
 
 /// <summary>
@@ -5,9 +7,11 @@ namespace Ordering.Domain.Customers;
 /// </summary>
 public sealed class Customer : Ordering.Domain.Common.AggregateRoot
 {
+    private EmailAddress _email;
+
     public string Name { get; private set; } = string.Empty;
 
-    public string Email { get; private set; } = string.Empty;
+    public string Email => _email.Value;
 
     public bool IsActive { get; private set; }
 
@@ -21,7 +25,7 @@ public sealed class Customer : Ordering.Domain.Common.AggregateRoot
     {
         Id = id;
         Name = name;
-        Email = email;
+        _email = EmailAddress.Create(email);
         IsActive = true;
         CreatedAtUtc = DateTime.UtcNow;
     }
@@ -29,9 +33,9 @@ public sealed class Customer : Ordering.Domain.Common.AggregateRoot
     public static Customer Register(string name, string email)
     {
         ValidateName(name);
-        ValidateEmail(email);
+        var customerEmail = EmailAddress.Create(email);
 
-        return new Customer(Guid.NewGuid(), name.Trim(), email.Trim());
+        return new Customer(Guid.NewGuid(), name.Trim(), customerEmail.Value);
     }
 
     public void ChangeName(string name)
@@ -45,19 +49,18 @@ public sealed class Customer : Ordering.Domain.Common.AggregateRoot
     public void ChangeEmail(string email)
     {
         EnsureActive();
-        ValidateEmail(email);
 
-        Email = email.Trim();
+        _email = EmailAddress.Create(email);
     }
 
     public void UpdateProfile(string name, string email)
     {
         EnsureActive();
         ValidateName(name);
-        ValidateEmail(email);
+        var customerEmail = EmailAddress.Create(email);
 
         Name = name.Trim();
-        Email = email.Trim();
+        _email = customerEmail;
     }
 
     public void Deactivate()
@@ -80,19 +83,6 @@ public sealed class Customer : Ordering.Domain.Common.AggregateRoot
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new ArgumentException("Customer name cannot be empty.", nameof(name));
-        }
-    }
-
-    private static void ValidateEmail(string email)
-    {
-        if (string.IsNullOrWhiteSpace(email))
-        {
-            throw new ArgumentException("Customer email cannot be empty.", nameof(email));
-        }
-
-        if (!email.Contains('@', StringComparison.Ordinal))
-        {
-            throw new ArgumentException("Customer email must be valid.", nameof(email));
         }
     }
 }

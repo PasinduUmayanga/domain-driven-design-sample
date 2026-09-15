@@ -1,3 +1,7 @@
+using Money = Ordering.Domain.Common.ValueObjects.Money;
+using ProductNameValue = Ordering.Domain.Common.ValueObjects.ProductName;
+using QuantityValue = Ordering.Domain.Common.ValueObjects.Quantity;
+
 namespace Ordering.Domain.Orders;
 
 /// <summary>
@@ -5,6 +9,12 @@ namespace Ordering.Domain.Orders;
 /// </summary>
 public sealed class OrderItem : Ordering.Domain.Common.Entity
 {
+    private ProductNameValue _productName;
+
+    private Money _unitPrice;
+
+    private QuantityValue _quantity;
+
     /// <summary>
     /// Gets the identity of the product being ordered.
     /// </summary>
@@ -13,22 +23,22 @@ public sealed class OrderItem : Ordering.Domain.Common.Entity
     /// <summary>
     /// Gets the product name captured when the item was added to the order.
     /// </summary>
-    public string ProductName { get; private set; } = string.Empty;
+    public string ProductName => _productName.Value;
 
     /// <summary>
     /// Gets the price per unit captured when the item was added to the order.
     /// </summary>
-    public decimal UnitPrice { get; private set; }
+    public decimal UnitPrice => _unitPrice.Amount;
 
     /// <summary>
     /// Gets the number of units ordered.
     /// </summary>
-    public int Quantity { get; private set; }
+    public int Quantity => _quantity.Value;
 
     /// <summary>
     /// Gets the line total derived from the captured unit price and quantity.
     /// </summary>
-    public decimal TotalPrice => UnitPrice * Quantity;
+    public decimal TotalPrice => _unitPrice.Amount * _quantity.Value;
 
     // Reserved for ORM/materialization scenarios. New items must be created through
     // the internal constructor so their product and quantity invariants are checked.
@@ -54,32 +64,15 @@ public sealed class OrderItem : Ordering.Domain.Common.Entity
                 nameof(productId));
         }
 
-        if (string.IsNullOrWhiteSpace(productName))
-        {
-            throw new ArgumentException(
-                "Product name cannot be empty.",
-                nameof(productName));
-        }
-
-        if (unitPrice < 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(unitPrice),
-                "Unit price cannot be negative.");
-        }
-
-        if (quantity <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(quantity),
-                "Quantity must be greater than zero.");
-        }
+        var capturedProductName = ProductNameValue.Create(productName);
+        var capturedUnitPrice = Money.Create(unitPrice, nameof(unitPrice));
+        var itemQuantity = QuantityValue.Create(quantity);
 
         Id = Guid.NewGuid();
         ProductId = productId;
-        ProductName = productName;
-        UnitPrice = unitPrice;
-        Quantity = quantity;
+        _productName = capturedProductName;
+        _unitPrice = capturedUnitPrice;
+        _quantity = itemQuantity;
     }
 
     /// <summary>
@@ -88,14 +81,9 @@ public sealed class OrderItem : Ordering.Domain.Common.Entity
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="quantity"/> is not positive.</exception>
     internal void IncreaseQuantity(int quantity)
     {
-        if (quantity <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(quantity),
-                "Quantity must be greater than zero.");
-        }
+        var additionalQuantity = QuantityValue.Create(quantity);
 
-        Quantity += quantity;
+        _quantity = QuantityValue.Create(_quantity.Value + additionalQuantity.Value);
     }
 
     /// <summary>
@@ -104,13 +92,6 @@ public sealed class OrderItem : Ordering.Domain.Common.Entity
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="quantity"/> is not positive.</exception>
     internal void ChangeQuantity(int quantity)
     {
-        if (quantity <= 0)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(quantity),
-                "Quantity must be greater than zero.");
-        }
-
-        Quantity = quantity;
+        _quantity = QuantityValue.Create(quantity);
     }
 }
