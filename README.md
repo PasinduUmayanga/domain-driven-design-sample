@@ -890,6 +890,12 @@ Run the API:
 dotnet run --project src/Ordering.Api
 ```
 
+Open the Swagger UI in Development:
+
+```http
+GET /swagger
+```
+
 Check the health endpoint:
 
 ```http
@@ -920,6 +926,12 @@ Check the health endpoint:
 
 ```http
 GET /health
+```
+
+Open the Swagger UI:
+
+```http
+GET /swagger
 ```
 
 ## Order Endpoints

@@ -7,7 +7,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc(
+        "v1",
+        new()
+        {
+            Title = "Ordering API",
+            Version = "v1",
+            Description = "HTTP API for the Domain-Driven Design ordering sample."
+        });
+});
 builder.Services.AddOrderingInfrastructure();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
