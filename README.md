@@ -14,12 +14,14 @@ This repository is a learning-focused .NET sample for Domain-Driven Design (DDD)
 ## Table of Contents
 
 - [Purpose](#purpose)
+- [Implementation Steps](#implementation-steps)
 - [Solution Structure](#solution-structure)
 - [Architecture Rules](#architecture-rules)
 - [Domain Model](#domain-model)
 - [Value Objects](#value-objects)
 - [Aggregate Roots](#aggregate-roots)
 - [Domain Events](#domain-events)
+- [Specification Pattern](#specification-pattern)
 - [Business Rules](#business-rules)
 - [Application Layer](#application-layer)
 - [Infrastructure Layer](#infrastructure-layer)
@@ -63,6 +65,140 @@ public class Order
 ```
 
 The domain model should protect its own rules through meaningful behavior.
+
+## Implementation Steps
+
+Use these steps to study or rebuild the sample in a clean project.
+
+1. **Create the Solution Structure**
+
+   Create four source projects and two test projects:
+
+   ```text
+   src/Ordering.Domain
+   src/Ordering.Application
+   src/Ordering.Infrastructure
+   src/Ordering.Api
+   tests/Ordering.Domain.Tests
+   tests/Ordering.Application.Tests
+   ```
+
+   Keep dependencies pointing inward: API and Infrastructure depend on Application, Application depends on Domain, and Domain depends on no other project.
+
+2. **Add Domain Building Blocks**
+
+   Create common domain base types:
+
+   - `Entity`
+   - `AggregateRoot`
+   - `IDomainEvent`
+
+   These types introduce identity, aggregate boundaries, and pending domain events.
+
+3. **Add Value Objects**
+
+   Add value objects before writing rich entities so small validation rules have a clear home:
+
+   - `Email`
+   - `Money`
+   - `ProductName`
+   - `Quantity`
+
+   Use value objects inside aggregates, but keep API DTOs simple with strings, decimals, and integers.
+
+4. **Add Aggregate Roots and Entities**
+
+   Create the core domain model:
+
+   - `Customer : AggregateRoot`
+   - `Product : AggregateRoot`
+   - `Order : AggregateRoot`
+   - `OrderItem : Entity`
+
+   Keep `OrderItem` inside the `Order` aggregate. Do not create an `OrderItem` repository.
+
+5. **Add Domain Events**
+
+   Let aggregate roots record events after successful state changes:
+
+   - `OrderCreatedDomainEvent`
+   - `OrderItemAddedDomainEvent`
+   - `OrderConfirmedDomainEvent`
+   - `OrderCancelledDomainEvent`
+
+   Record events inside the aggregate, but do not dispatch them from the Domain layer.
+
+6. **Add Application Use Cases**
+
+   Create application services and repository interfaces:
+
+   - `CustomerService`
+   - `ProductService`
+   - `OrderService`
+   - `ICustomerRepository`
+   - `IProductRepository`
+   - `IOrderRepository`
+
+   Application services load aggregates, call domain behavior, save aggregates, and return response DTOs.
+
+7. **Add Domain Event Dispatching**
+
+   Add `IDomainEventDispatcher` in the Application layer.
+
+   After persistence succeeds, dispatch pending aggregate events and clear them:
+
+   ```csharp
+   await orderRepository.SaveAsync(order, cancellationToken);
+   await domainEventDispatcher.DispatchAsync(order.DomainEvents.ToArray(), cancellationToken);
+   order.ClearDomainEvents();
+   ```
+
+   Infrastructure provides `LoggingDomainEventDispatcher` for this sample.
+
+8. **Add Specification Pattern**
+
+   Create named specifications for cross-aggregate rules:
+
+   - `ActiveCustomerSpecification`
+   - `AvailableProductSpecification`
+
+   Use them in `OrderService` for rules like:
+
+   - active customers can place orders
+   - available products can be added to orders
+
+   Keep aggregate invariants, such as pending-order checks, inside the aggregate itself.
+
+9. **Add Infrastructure Adapters**
+
+   Implement in-memory repositories in Infrastructure:
+
+   - `InMemoryCustomerRepository`
+   - `InMemoryProductRepository`
+   - `InMemoryOrderRepository`
+
+   Register repositories, domain event dispatcher, and specifications in `AddOrderingInfrastructure`.
+
+10. **Add API Endpoints and Swagger**
+
+    Expose the use cases through minimal API endpoint groups:
+
+    - customers
+    - products
+    - orders
+
+    Enable Swagger so the workflow can be tested from the browser.
+
+11. **Add Tests**
+
+    Add focused tests for:
+
+    - value object validation
+    - aggregate behavior
+    - domain events
+    - specifications
+    - application service orchestration
+    - repository architecture rules
 
 ## Solution Structure
 
@@ -309,6 +445,33 @@ order.ClearDomainEvents();
 
 This sample uses `IDomainEventDispatcher` in the Application layer and `LoggingDomainEventDispatcher` in Infrastructure. The logging dispatcher is intentionally simple: it shows where event publishing belongs without adding a message broker or background worker.
 
+## Specification Pattern
+
+The Specification Pattern gives a business rule a clear name and a reusable object.
+
+This sample uses specifications for rules that are checked after loading another aggregate:
+
+- `ActiveCustomerSpecification` answers whether a customer can place an order.
+- `AvailableProductSpecification` answers whether a product can be added to an order.
+
+The service code reads like the business rule:
+
+```csharp
+if (!activeCustomerSpecification.IsSatisfiedBy(customer))
+{
+    throw new InvalidOperationException(
+        "Inactive customers cannot place orders.");
+}
+
+if (!availableProductSpecification.IsSatisfiedBy(product))
+{
+    throw new InvalidOperationException(
+        "Unavailable products cannot be added to orders.");
+}
+```
+
+Use specifications when a rule is important enough to name, test, and reuse. Keep simple aggregate invariants inside the aggregate itself.
+
 ## Business Rules
 
 The sample enforces these rules:
@@ -347,6 +510,7 @@ src/Ordering.Application
 |-- Customers
 |-- Orders
 |-- Products
+|-- Specifications
 `-- Services
     |-- CustomerService.cs
     |-- OrderService.cs
@@ -773,7 +937,10 @@ Use this checklist while reading the code:
 - Find where simple API values become value objects.
 - Notice which classes are aggregate roots.
 - Notice that `OrderItem` has no repository.
+- Read the order domain events and `AggregateRoot.DomainEvents`.
 - Read application services after the domain model.
+- Read `IDomainEventDispatcher` and the logging dispatcher.
+- Read `ActiveCustomerSpecification` and `AvailableProductSpecification`.
 - Read repository interfaces before repository implementations.
 - Read API endpoints last.
 - Run tests to see each rule expressed as executable examples.

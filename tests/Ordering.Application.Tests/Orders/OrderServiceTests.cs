@@ -2,6 +2,8 @@ using Ordering.Application.Abstractions.DomainEvents;
 using Ordering.Application.Abstractions.Persistence;
 using Ordering.Application.Orders;
 using Ordering.Application.Services;
+using Ordering.Application.Specifications.Customers;
+using Ordering.Application.Specifications.Products;
 using Ordering.Domain.Common;
 using Ordering.Domain.Customers;
 using Ordering.Domain.Orders;
@@ -146,7 +148,9 @@ public class OrderServiceTests
             context.Orders,
             context.Customers,
             context.Products,
-            context.DomainEvents);
+            context.DomainEvents,
+            new ActiveCustomerSpecification(),
+            new AvailableProductSpecification());
 
     private static TestPersistenceContext CreateContext() =>
         new(
