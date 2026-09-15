@@ -934,12 +934,43 @@ Open the Swagger UI:
 GET /swagger
 ```
 
-## Order Endpoints
+## Postman Scenario - Customer, Product, and Order
 
-Create a customer:
+Use this scenario after running the API locally.
+
+Recommended Postman environment variables:
+
+```text
+baseUrl = http://localhost:5210
+customerId =
+productId =
+orderId =
+```
+
+If you run the `https` launch profile, use this value instead:
+
+```text
+baseUrl = https://localhost:7263
+```
+
+### 1. Check API Health
 
 ```http
-POST /customers
+GET {{baseUrl}}/health
+```
+
+Expected response:
+
+```json
+{
+  "status": "Healthy"
+}
+```
+
+### 2. Add a Customer
+
+```http
+POST {{baseUrl}}/customers
 Content-Type: application/json
 
 {
@@ -948,10 +979,42 @@ Content-Type: application/json
 }
 ```
 
-Create a product:
+Expected response:
+
+```json
+{
+  "id": "copy-this-customer-id",
+  "name": "Ada Lovelace",
+  "email": "ada@example.com",
+  "isActive": true,
+  "createdAtUtc": "2026-09-15T00:00:00Z"
+}
+```
+
+In Postman, save the returned `id` as:
+
+```text
+customerId
+```
+
+### 3. Modify the Customer
 
 ```http
-POST /products
+PUT {{baseUrl}}/customers/{{customerId}}
+Content-Type: application/json
+
+{
+  "name": "Ada Byron",
+  "email": "ada.byron@example.com"
+}
+```
+
+This updates the customer name and email together. If either value is invalid, the domain model rejects the change.
+
+### 4. Add a Product
+
+```http
+POST {{baseUrl}}/products
 Content-Type: application/json
 
 {
@@ -960,33 +1023,112 @@ Content-Type: application/json
 }
 ```
 
-Create an order:
+Expected response:
 
-```http
-POST /orders
-Content-Type: application/json
-
+```json
 {
-  "customerId": "11111111-1111-1111-1111-111111111111"
+  "id": "copy-this-product-id",
+  "name": "Laptop",
+  "unitPrice": 250000,
+  "isAvailable": true,
+  "createdAtUtc": "2026-09-15T00:00:00Z"
 }
 ```
 
-Add an item:
+In Postman, save the returned `id` as:
+
+```text
+productId
+```
+
+### 5. Modify the Product
 
 ```http
-POST /orders/{orderId}/items
+PUT {{baseUrl}}/products/{{productId}}
 Content-Type: application/json
 
 {
-  "productId": "22222222-2222-2222-2222-222222222222",
+  "name": "Developer Laptop",
+  "unitPrice": 275000
+}
+```
+
+### 6. Create an Order
+
+```http
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{
+  "customerId": "{{customerId}}"
+}
+```
+
+Expected response:
+
+```json
+{
+  "id": "copy-this-order-id",
+  "customerId": "customer-id-from-step-2",
+  "status": 1,
+  "createdAtUtc": "2026-09-15T00:00:00Z",
+  "items": [],
+  "totalAmount": 0
+}
+```
+
+In Postman, save the returned `id` as:
+
+```text
+orderId
+```
+
+### 7. Add Product to the Order
+
+```http
+POST {{baseUrl}}/orders/{{orderId}}/items
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
   "quantity": 2
 }
 ```
 
-Change an item quantity:
+The order captures the product name and price at the time the item is added.
+
+### 8. Get the Order
 
 ```http
-PATCH /orders/{orderId}/items/{productId}
+GET {{baseUrl}}/orders/{{orderId}}
+```
+
+Expected result includes one item and a calculated total:
+
+```json
+{
+  "id": "order-id-from-step-6",
+  "customerId": "customer-id-from-step-2",
+  "status": 1,
+  "createdAtUtc": "2026-09-15T00:00:00Z",
+  "totalAmount": 550000,
+  "items": [
+    {
+      "id": "order-item-id",
+      "productId": "product-id-from-step-4",
+      "productName": "Developer Laptop",
+      "unitPrice": 275000,
+      "quantity": 2,
+      "totalPrice": 550000
+    }
+  ]
+}
+```
+
+### 9. Change Order Item Quantity
+
+```http
+PATCH {{baseUrl}}/orders/{{orderId}}/items/{{productId}}
 Content-Type: application/json
 
 {
@@ -994,11 +1136,68 @@ Content-Type: application/json
 }
 ```
 
-Complete the order lifecycle:
+Expected total after this step:
+
+```text
+825000
+```
+
+### 10. Remove an Order Item
+
+Use this only if you want to test removal before confirming the order:
 
 ```http
-POST /orders/{orderId}/confirm
-POST /orders/{orderId}/cancel
+DELETE {{baseUrl}}/orders/{{orderId}}/items/{{productId}}
+```
+
+After removal, add the item again before confirming:
+
+```http
+POST {{baseUrl}}/orders/{{orderId}}/items
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "quantity": 1
+}
+```
+
+### 11. Confirm the Order
+
+```http
+POST {{baseUrl}}/orders/{{orderId}}/confirm
+```
+
+After confirmation, the order status becomes `Confirmed`, and item changes are no longer allowed.
+
+### 12. Try a Rule Violation
+
+After confirmation, try to add another item:
+
+```http
+POST {{baseUrl}}/orders/{{orderId}}/items
+Content-Type: application/json
+
+{
+  "productId": "{{productId}}",
+  "quantity": 1
+}
+```
+
+Expected response:
+
+```json
+{
+  "error": "Only pending orders can be modified."
+}
+```
+
+### 13. Cancel an Order Alternative
+
+Cancellation is only valid while an order is still pending. To test cancellation, create a new order and call:
+
+```http
+POST {{baseUrl}}/orders/{{orderId}}/cancel
 ```
 
 Important rules are still enforced by the domain model and orchestrated by the application layer. Empty orders cannot be confirmed, non-pending orders cannot be modified, inactive customers cannot place orders, unavailable products cannot be added to orders, quantities must be positive, and prices cannot be negative.
