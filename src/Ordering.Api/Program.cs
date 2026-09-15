@@ -6,6 +6,8 @@ using Ordering.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 builder.Services.AddOrderingInfrastructure();
 builder.Services.AddScoped<CustomerService>();
 builder.Services.AddScoped<OrderService>();
@@ -40,6 +42,12 @@ app.UseExceptionHandler(exceptionApp =>
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Ordering API v1");
+        options.RoutePrefix = "swagger";
+    });
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }))
