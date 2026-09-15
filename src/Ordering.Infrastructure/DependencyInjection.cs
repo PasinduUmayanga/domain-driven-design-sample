@@ -1,5 +1,7 @@
+using Ordering.Application.Abstractions.DomainEvents;
 using Microsoft.Extensions.DependencyInjection;
 using Ordering.Application.Abstractions.Persistence;
+using Ordering.Infrastructure.DomainEvents;
 using Ordering.Infrastructure.Customers;
 using Ordering.Infrastructure.Orders;
 using Ordering.Infrastructure.Products;
@@ -13,6 +15,7 @@ public static class DependencyInjection
         services.AddSingleton<ICustomerRepository, InMemoryCustomerRepository>();
         services.AddSingleton<IOrderRepository, InMemoryOrderRepository>();
         services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+        services.AddSingleton<IDomainEventDispatcher, LoggingDomainEventDispatcher>();
 
         return services;
     }

@@ -1,3 +1,4 @@
+using Ordering.Application.Abstractions.DomainEvents;
 using Ordering.Application.Abstractions.Persistence;
 using Ordering.Application.Orders;
 using Ordering.Domain.Orders;
@@ -7,7 +8,8 @@ namespace Ordering.Application.Services;
 public sealed class OrderService(
     IOrderRepository orderRepository,
     ICustomerRepository customerRepository,
-    IProductRepository productRepository)
+    IProductRepository productRepository,
+    IDomainEventDispatcher domainEventDispatcher)
 {
     public async Task<OrderResponse> CreateAsync(
         CreateOrderRequest request,
@@ -32,6 +34,7 @@ public sealed class OrderService(
         var order = Order.Create(customer.Id);
 
         await orderRepository.AddAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -75,6 +78,7 @@ public sealed class OrderService(
             request.Quantity);
 
         await orderRepository.SaveAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -92,6 +96,7 @@ public sealed class OrderService(
         order.ChangeItemQuantity(productId, request.Quantity);
 
         await orderRepository.SaveAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -106,6 +111,7 @@ public sealed class OrderService(
         order.RemoveItem(productId);
 
         await orderRepository.SaveAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -119,6 +125,7 @@ public sealed class OrderService(
         order.Confirm();
 
         await orderRepository.SaveAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -132,6 +139,7 @@ public sealed class OrderService(
         order.Cancel();
 
         await orderRepository.SaveAsync(order, cancellationToken);
+        await DispatchDomainEventsAsync(order, cancellationToken);
 
         return OrderResponse.FromOrder(order);
     }
@@ -151,5 +159,21 @@ public sealed class OrderService(
 
         return order
             ?? throw new KeyNotFoundException("Order was not found.");
+    }
+
+    private async Task DispatchDomainEventsAsync(
+        Order order,
+        CancellationToken cancellationToken)
+    {
+        if (order.DomainEvents.Count == 0)
+        {
+            return;
+        }
+
+        await domainEventDispatcher.DispatchAsync(
+            order.DomainEvents.ToArray(),
+            cancellationToken);
+
+        order.ClearDomainEvents();
     }
 }

@@ -1,8 +1,11 @@
+using Ordering.Application.Abstractions.DomainEvents;
 using Ordering.Application.Abstractions.Persistence;
 using Ordering.Application.Orders;
 using Ordering.Application.Services;
+using Ordering.Domain.Common;
 using Ordering.Domain.Customers;
 using Ordering.Domain.Orders;
+using Ordering.Domain.Orders.Events;
 using Ordering.Domain.Products;
 
 namespace Ordering.Application.Tests.Orders;
@@ -25,6 +28,12 @@ public class OrderServiceTests
         Assert.Equal(customer.Id, order.CustomerId);
         Assert.Equal(OrderStatus.Pending, order.Status);
         Assert.Empty(order.Items);
+
+        var savedOrder = await context.Orders.GetByIdAsync(order.Id);
+        Assert.NotNull(savedOrder);
+        Assert.Empty(savedOrder.DomainEvents);
+        Assert.IsType<OrderCreatedDomainEvent>(
+            Assert.Single(context.DomainEvents.DispatchedEvents));
     }
 
     [Fact]
@@ -47,6 +56,13 @@ public class OrderServiceTests
         Assert.Equal(product.Name, item.ProductName);
         Assert.Equal(500_000m, item.TotalPrice);
         Assert.Equal(500_000m, updatedOrder.TotalAmount);
+
+        var savedOrder = await context.Orders.GetByIdAsync(order.Id);
+        Assert.NotNull(savedOrder);
+        Assert.Empty(savedOrder.DomainEvents);
+        Assert.Contains(
+            context.DomainEvents.DispatchedEvents,
+            domainEvent => domainEvent is OrderItemAddedDomainEvent);
     }
 
     [Fact]
@@ -129,18 +145,37 @@ public class OrderServiceTests
         new(
             context.Orders,
             context.Customers,
-            context.Products);
+            context.Products,
+            context.DomainEvents);
 
     private static TestPersistenceContext CreateContext() =>
         new(
             new FakeOrderRepository(),
             new FakeCustomerRepository(),
-            new FakeProductRepository());
+            new FakeProductRepository(),
+            new FakeDomainEventDispatcher());
 
     private sealed record TestPersistenceContext(
         FakeOrderRepository Orders,
         FakeCustomerRepository Customers,
-        FakeProductRepository Products);
+        FakeProductRepository Products,
+        FakeDomainEventDispatcher DomainEvents);
+
+    private sealed class FakeDomainEventDispatcher : IDomainEventDispatcher
+    {
+        private readonly List<IDomainEvent> _dispatchedEvents = [];
+
+        public IReadOnlyCollection<IDomainEvent> DispatchedEvents => _dispatchedEvents.AsReadOnly();
+
+        public Task DispatchAsync(
+            IReadOnlyCollection<IDomainEvent> domainEvents,
+            CancellationToken cancellationToken = default)
+        {
+            _dispatchedEvents.AddRange(domainEvents);
+
+            return Task.CompletedTask;
+        }
+    }
 
     private sealed class FakeOrderRepository : IOrderRepository
     {

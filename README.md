@@ -293,7 +293,21 @@ public abstract class AggregateRoot : Entity
 - `OrderConfirmedDomainEvent`
 - `OrderCancelledDomainEvent`
 
-This sample records events but does not dispatch them yet. A later step can publish pending events after saving an aggregate, then call `ClearDomainEvents()`.
+Application services dispatch pending events after persistence succeeds, then clear them from the aggregate:
+
+```csharp
+order.Confirm();
+
+await orderRepository.SaveAsync(order, cancellationToken);
+
+await domainEventDispatcher.DispatchAsync(
+    order.DomainEvents.ToArray(),
+    cancellationToken);
+
+order.ClearDomainEvents();
+```
+
+This sample uses `IDomainEventDispatcher` in the Application layer and `LoggingDomainEventDispatcher` in Infrastructure. The logging dispatcher is intentionally simple: it shows where event publishing belongs without adding a message broker or background worker.
 
 ## Business Rules
 
@@ -301,7 +315,7 @@ The sample enforces these rules:
 
 1. A customer starts active.
 2. Customer name and email are required.
-3. Customer email must contain `@`.
+3. Customer email must use a valid email format.
 4. Inactive customers cannot be modified.
 5. A product name is required.
 6. Product price cannot be negative.
