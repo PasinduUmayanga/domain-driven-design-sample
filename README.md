@@ -14,7 +14,6 @@ This repository is a learning-focused .NET sample for Domain-Driven Design (DDD)
 ## Table of Contents
 
 - [Purpose](#purpose)
-- [Implementation Steps](#implementation-steps)
 - [Solution Structure](#solution-structure)
 - [Architecture Rules](#architecture-rules)
 - [Domain Model](#domain-model)
@@ -66,140 +65,6 @@ public class Order
 
 The domain model should protect its own rules through meaningful behavior.
 
-## Implementation Steps
-
-Use these steps to study or rebuild the sample in a clean project.
-
-1. **Create the Solution Structure**
-
-   Create four source projects and two test projects:
-
-   ```text
-   src/Ordering.Domain
-   src/Ordering.Application
-   src/Ordering.Infrastructure
-   src/Ordering.Api
-   tests/Ordering.Domain.Tests
-   tests/Ordering.Application.Tests
-   ```
-
-   Keep dependencies pointing inward: API and Infrastructure depend on Application, Application depends on Domain, and Domain depends on no other project.
-
-2. **Add Domain Building Blocks**
-
-   Create common domain base types:
-
-   - `Entity`
-   - `AggregateRoot`
-   - `IDomainEvent`
-
-   These types introduce identity, aggregate boundaries, and pending domain events.
-
-3. **Add Value Objects**
-
-   Add value objects before writing rich entities so small validation rules have a clear home:
-
-   - `Email`
-   - `Money`
-   - `ProductName`
-   - `Quantity`
-
-   Use value objects inside aggregates, but keep API DTOs simple with strings, decimals, and integers.
-
-4. **Add Aggregate Roots and Entities**
-
-   Create the core domain model:
-
-   - `Customer : AggregateRoot`
-   - `Product : AggregateRoot`
-   - `Order : AggregateRoot`
-   - `OrderItem : Entity`
-
-   Keep `OrderItem` inside the `Order` aggregate. Do not create an `OrderItem` repository.
-
-5. **Add Domain Events**
-
-   Let aggregate roots record events after successful state changes:
-
-   - `OrderCreatedDomainEvent`
-   - `OrderItemAddedDomainEvent`
-   - `OrderConfirmedDomainEvent`
-   - `OrderCancelledDomainEvent`
-
-   Record events inside the aggregate, but do not dispatch them from the Domain layer.
-
-6. **Add Application Use Cases**
-
-   Create application services and repository interfaces:
-
-   - `CustomerService`
-   - `ProductService`
-   - `OrderService`
-   - `ICustomerRepository`
-   - `IProductRepository`
-   - `IOrderRepository`
-
-   Application services load aggregates, call domain behavior, save aggregates, and return response DTOs.
-
-7. **Add Domain Event Dispatching**
-
-   Add `IDomainEventDispatcher` in the Application layer.
-
-   After persistence succeeds, dispatch pending aggregate events and clear them:
-
-   ```csharp
-   await orderRepository.SaveAsync(order, cancellationToken);
-   await domainEventDispatcher.DispatchAsync(order.DomainEvents.ToArray(), cancellationToken);
-   order.ClearDomainEvents();
-   ```
-
-   Infrastructure provides `LoggingDomainEventDispatcher` for this sample.
-
-8. **Add Specification Pattern**
-
-   Create named specifications for cross-aggregate rules:
-
-   - `ActiveCustomerSpecification`
-   - `AvailableProductSpecification`
-
-   Use them in `OrderService` for rules like:
-
-   - active customers can place orders
-   - available products can be added to orders
-
-   Keep aggregate invariants, such as pending-order checks, inside the aggregate itself.
-
-9. **Add Infrastructure Adapters**
-
-   Implement in-memory repositories in Infrastructure:
-
-   - `InMemoryCustomerRepository`
-   - `InMemoryProductRepository`
-   - `InMemoryOrderRepository`
-
-   Register repositories, domain event dispatcher, and specifications in `AddOrderingInfrastructure`.
-
-10. **Add API Endpoints and Swagger**
-
-    Expose the use cases through minimal API endpoint groups:
-
-    - customers
-    - products
-    - orders
-
-    Enable Swagger so the workflow can be tested from the browser.
-
-11. **Add Tests**
-
-    Add focused tests for:
-
-    - value object validation
-    - aggregate behavior
-    - domain events
-    - specifications
-    - application service orchestration
-    - repository architecture rules
-
 ## Solution Structure
 
 ```text
@@ -226,6 +91,27 @@ Project responsibilities:
 | `Ordering.Api` | HTTP endpoints, dependency injection, Swagger, and app startup. |
 | `Ordering.Domain.Tests` | Direct domain rule tests. |
 | `Ordering.Application.Tests` | Use-case orchestration tests with fake repositories. |
+
+### How to implement this structure
+
+1. Create the source projects:
+   - `src/Ordering.Domain`
+   - `src/Ordering.Application`
+   - `src/Ordering.Infrastructure`
+   - `src/Ordering.Api`
+2. Create the test projects:
+   - `tests/Ordering.Domain.Tests`
+   - `tests/Ordering.Application.Tests`
+3. Add project references:
+   - `Ordering.Application` references `Ordering.Domain`.
+   - `Ordering.Infrastructure` references `Ordering.Application` and `Ordering.Domain`.
+   - `Ordering.Api` references `Ordering.Application` and `Ordering.Infrastructure`.
+   - Test projects reference the projects they test.
+4. Keep the dependency rule:
+   - Domain depends on nothing.
+   - Application depends on Domain.
+   - Infrastructure depends on Application and Domain.
+   - API is the composition root.
 
 ## Architecture Rules
 
@@ -284,6 +170,25 @@ src/Ordering.Domain
 `-- Products
     `-- Product.cs
 ```
+
+### How to implement the domain building blocks
+
+1. Add `src/Ordering.Domain/Common/Entity.cs`.
+   - Put the shared `Id` property here.
+2. Add `src/Ordering.Domain/Common/AggregateRoot.cs`.
+   - Inherit from `Entity`.
+   - Store pending domain events here.
+3. Add `src/Ordering.Domain/Common/IDomainEvent.cs`.
+   - Add `OccurredAtUtc`.
+4. Update aggregate roots to inherit from `AggregateRoot`.
+   - `Customer`
+   - `Product`
+   - `Order`
+5. Update child entities to inherit from `Entity`.
+   - `OrderItem`
+6. Add architecture tests in `tests/Ordering.Domain.Tests`.
+   - Verify aggregate roots inherit from `AggregateRoot`.
+   - Verify `OrderItem` is an entity inside the `Order` aggregate.
 
 ### Entity
 
@@ -365,6 +270,37 @@ public readonly record struct Quantity
 
 The API still accepts simple JSON values such as strings, decimals, and integers. The Domain layer converts those values into value objects before storing or using them.
 
+### How to implement value objects
+
+1. Add value object files under `src/Ordering.Domain/Common/ValueObjects`:
+   - `Email.cs`
+   - `Money.cs`
+   - `ProductName.cs`
+   - `Quantity.cs`
+2. Put validation inside each value object:
+   - `Email` validates email format.
+   - `Money` rejects negative amounts.
+   - `ProductName` rejects empty names and trims input.
+   - `Quantity` requires a value greater than zero.
+3. Update `Customer`.
+   - Store email using the `Email` value object.
+   - Keep the public response-friendly property as `string Email`.
+4. Update `Product`.
+   - Store name using `ProductName`.
+   - Store price using `Money`.
+   - Keep public properties as `string Name` and `decimal UnitPrice`.
+5. Update `OrderItem`.
+   - Store captured product name using `ProductName`.
+   - Store unit price using `Money`.
+   - Store quantity using `Quantity`.
+6. Do not add value objects to dependency injection.
+   - Value objects are created directly in the Domain layer.
+   - They are not services.
+7. Add tests under `tests/Ordering.Domain.Tests/ValueObjects`.
+   - Test valid creation.
+   - Test invalid input.
+   - Test equality where useful.
+
 ## Aggregate Roots
 
 An aggregate is a consistency boundary. An aggregate root is the object that outside code is allowed to load, save, and call.
@@ -395,6 +331,27 @@ await orderItemRepository.SaveAsync(orderItem, cancellationToken);
 ```
 
 `OrderItem` does not get its own repository because it is controlled by `Order`.
+
+### How to implement aggregate roots and entities
+
+1. Add `Customer` in `src/Ordering.Domain/Customers`.
+   - Use `Register`.
+   - Use methods like `UpdateProfile` and `Deactivate`.
+2. Add `Product` in `src/Ordering.Domain/Products`.
+   - Use `Create`.
+   - Use methods like `Rename`, `ChangePrice`, `MarkUnavailable`, and `MarkAvailable`.
+3. Add `Order` in `src/Ordering.Domain/Orders`.
+   - Use `Create`.
+   - Use methods like `AddItem`, `ChangeItemQuantity`, `RemoveItem`, `Confirm`, and `Cancel`.
+4. Add `OrderItem` inside `src/Ordering.Domain/Orders`.
+   - Keep its constructor `internal`.
+   - Create and mutate order items only through `Order`.
+5. Add repository interfaces only for aggregate roots.
+   - `ICustomerRepository`
+   - `IProductRepository`
+   - `IOrderRepository`
+6. Do not add `IOrderItemRepository`.
+   - `OrderItem` belongs to the `Order` aggregate.
 
 ## Domain Events
 
@@ -445,6 +402,54 @@ order.ClearDomainEvents();
 
 This sample uses `IDomainEventDispatcher` in the Application layer and `LoggingDomainEventDispatcher` in Infrastructure. The logging dispatcher is intentionally simple: it shows where event publishing belongs without adding a message broker or background worker.
 
+### How to implement domain events
+
+1. Add domain event records under `src/Ordering.Domain/Orders/Events`:
+   - `OrderCreatedDomainEvent`
+   - `OrderItemAddedDomainEvent`
+   - `OrderConfirmedDomainEvent`
+   - `OrderCancelledDomainEvent`
+2. Raise events inside `Order` after successful state changes.
+   - Raise `OrderCreatedDomainEvent` after creating an order.
+   - Raise `OrderItemAddedDomainEvent` after adding or increasing an item.
+   - Raise `OrderConfirmedDomainEvent` after confirming an order.
+   - Raise `OrderCancelledDomainEvent` after cancelling an order.
+3. Store events in `AggregateRoot`.
+   - Use `RaiseDomainEvent`.
+   - Expose `DomainEvents`.
+   - Add `ClearDomainEvents`.
+4. Do not dispatch events from the Domain layer.
+   - The Domain records what happened.
+   - The Application/Infrastructure layers decide how to publish it.
+5. Add tests in `tests/Ordering.Domain.Tests/Orders`.
+   - Verify each operation records the expected event.
+   - Verify invalid operations do not record events.
+   - Verify events can be cleared.
+
+### How to implement domain event dispatching
+
+1. Add `src/Ordering.Application/Abstractions/DomainEvents/IDomainEventDispatcher.cs`.
+   - This is the Application-layer abstraction for publishing domain events.
+2. Add `src/Ordering.Infrastructure/DomainEvents/LoggingDomainEventDispatcher.cs`.
+   - This Infrastructure implementation logs dispatched events.
+   - A real project could replace it with MediatR, a message bus, or an outbox.
+3. Register the dispatcher in `src/Ordering.Infrastructure/DependencyInjection.cs`.
+   - Add `IDomainEventDispatcher`.
+   - Map it to `LoggingDomainEventDispatcher`.
+4. Inject `IDomainEventDispatcher` into `OrderService`.
+5. After repository save/add succeeds, dispatch and clear events:
+
+   ```csharp
+   await orderRepository.SaveAsync(order, cancellationToken);
+   await domainEventDispatcher.DispatchAsync(order.DomainEvents.ToArray(), cancellationToken);
+   order.ClearDomainEvents();
+   ```
+
+6. Add application tests.
+   - Use a fake dispatcher.
+   - Verify events are dispatched.
+   - Verify aggregate events are cleared.
+
 ## Specification Pattern
 
 The Specification Pattern gives a business rule a clear name and a reusable object.
@@ -471,6 +476,27 @@ if (!availableProductSpecification.IsSatisfiedBy(product))
 ```
 
 Use specifications when a rule is important enough to name, test, and reuse. Keep simple aggregate invariants inside the aggregate itself.
+
+### How to implement the Specification Pattern
+
+1. Add `src/Ordering.Application/Specifications/ISpecification.cs`.
+   - Define `bool IsSatisfiedBy(T candidate)`.
+2. Add customer specifications.
+   - `src/Ordering.Application/Specifications/Customers/ActiveCustomerSpecification.cs`
+3. Add product specifications.
+   - `src/Ordering.Application/Specifications/Products/AvailableProductSpecification.cs`
+4. Register specifications in `src/Ordering.Infrastructure/DependencyInjection.cs`.
+   - Register `ISpecification<Customer>` as `ActiveCustomerSpecification`.
+   - Register `ISpecification<Product>` as `AvailableProductSpecification`.
+5. Inject specifications into `OrderService`.
+6. Replace inline cross-aggregate checks:
+   - Replace direct `customer.IsActive` checks with `ActiveCustomerSpecification`.
+   - Replace direct `product.IsAvailable` checks with `AvailableProductSpecification`.
+7. Keep aggregate invariants inside aggregates.
+   - Example: pending-order checks stay in `Order`.
+8. Add tests in `tests/Ordering.Application.Tests/Specifications`.
+   - Verify active/inactive customer results.
+   - Verify available/unavailable product results.
 
 ## Business Rules
 
@@ -536,6 +562,26 @@ await orderRepository.SaveAsync(order, cancellationToken);
 
 Application services should not duplicate domain rules. For example, `OrderService` should ask `Order` to confirm itself; `Order` decides whether that operation is valid.
 
+### How to implement the Application layer
+
+1. Add request/response DTOs in `Ordering.Application`.
+   - `Customers`
+   - `Products`
+   - `Orders`
+2. Add repository interfaces under `src/Ordering.Application/Abstractions/Persistence`.
+   - These are application ports.
+3. Add application services under `src/Ordering.Application/Services`.
+   - `CustomerService`
+   - `ProductService`
+   - `OrderService`
+4. In application services:
+   - Load aggregate roots from repositories.
+   - Call domain methods.
+   - Save aggregate roots.
+   - Return response DTOs.
+5. Do not put HTTP logic in Application.
+6. Do not put database implementation logic in Application.
+
 ## Infrastructure Layer
 
 Infrastructure contains technical adapters.
@@ -560,6 +606,22 @@ public static IServiceCollection AddOrderingInfrastructure(this IServiceCollecti
     return services;
 }
 ```
+
+### How to implement the Infrastructure layer
+
+1. Add in-memory repositories:
+   - `InMemoryCustomerRepository`
+   - `InMemoryProductRepository`
+   - `InMemoryOrderRepository`
+2. Implement Application repository interfaces.
+3. Add `src/Ordering.Infrastructure/DependencyInjection.cs`.
+4. Register services by region:
+   - Persistence
+   - Domain Events
+   - Specifications
+5. Keep Infrastructure replaceable.
+   - API should call `AddOrderingInfrastructure`.
+   - Application should only know abstractions.
 
 ## API Layer
 
@@ -589,6 +651,20 @@ POST   /orders/{orderId}/cancel
 ```
 
 The endpoint files call application services. They should not contain business rules.
+
+### How to implement the API layer
+
+1. Add endpoint files under `src/Ordering.Api/Endpoints`.
+   - `CustomerEndpoints`
+   - `ProductEndpoints`
+   - `OrderEndpoints`
+2. Register application services in `Program.cs`.
+3. Call `AddOrderingInfrastructure`.
+4. Map endpoint groups.
+5. Add Swagger packages and configuration.
+6. Update `launchSettings.json`.
+   - Set `launchBrowser` to `true`.
+   - Set `launchUrl` to `swagger`.
 
 ## Run the Project
 
@@ -921,11 +997,25 @@ Application tests verify use-case orchestration:
 - Order creation, item changes, confirmation, and missing entity behavior.
 - Repository architecture rules.
 
-Run:
+### How to implement tests
 
-```powershell
-dotnet test
-```
+1. Add Domain tests for:
+   - value objects
+   - aggregate behavior
+   - domain events
+2. Add Application tests for:
+   - services
+   - specifications
+   - repository architecture
+   - domain event dispatching
+3. Use fake repositories in Application tests.
+4. Use a fake domain event dispatcher in `OrderService` tests.
+5. Run both validation commands:
+
+   ```powershell
+   dotnet test
+   dotnet build
+   ```
 
 ## Study Checklist
 
