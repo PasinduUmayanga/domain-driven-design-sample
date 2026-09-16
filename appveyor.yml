@@ -42,8 +42,8 @@ build_script:
   - dotnet build OrderingSystem.slnx --configuration Release --no-restore
 
 test_script:
-  - dotnet test tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
-  - dotnet test tests/Ordering.Application.Tests/Ordering.Application.Tests.csproj --configuration Release --no-restore --no-build --logger "trx;LogFileName=test-results.trx"
+  - dotnet test tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj --configuration Release --no-restore --no-build --logger "console;verbosity=detailed" --logger "trx;LogFileName=domain-test-results.trx" --results-directory tests/Ordering.Domain.Tests/TestResults
+  - dotnet test tests/Ordering.Application.Tests/Ordering.Application.Tests.csproj --configuration Release --no-restore --no-build --logger "console;verbosity=detailed" --logger "trx;LogFileName=application-test-results.trx" --results-directory tests/Ordering.Application.Tests/TestResults
 
 artifacts:
   - path: tests/**/TestResults/*.trx
