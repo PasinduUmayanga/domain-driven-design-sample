@@ -5,6 +5,7 @@ using Ordering.Application.Specifications;
 using Ordering.Application.Specifications.Customers;
 using Ordering.Application.Specifications.Products;
 using Ordering.Domain.Customers;
+using Ordering.Domain.Orders;
 using Ordering.Domain.Products;
 using Ordering.Infrastructure.Customers;
 using Ordering.Infrastructure.DomainEvents;
@@ -40,6 +41,14 @@ public static class DependencyInjection
         // This sample logs domain events after persistence. A production system
         // could replace this with handlers, an outbox, or a message bus publisher.
         services.AddSingleton<IDomainEventDispatcher, LoggingDomainEventDispatcher>();
+
+        #endregion
+
+        #region Factories
+
+        // Domain factories live in the Domain project. They are registered here
+        // so application services can request them through constructor injection.
+        services.AddSingleton<IOrderFactory, OrderFactory>();
 
         #endregion
 

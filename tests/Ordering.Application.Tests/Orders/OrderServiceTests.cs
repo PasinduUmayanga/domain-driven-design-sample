@@ -148,6 +148,7 @@ public class OrderServiceTests
             context.Orders,
             context.Customers,
             context.Products,
+            new OrderFactory(),
             context.DomainEvents,
             new ActiveCustomerSpecification(),
             new AvailableProductSpecification());

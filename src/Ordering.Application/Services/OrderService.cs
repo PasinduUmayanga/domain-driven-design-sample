@@ -16,6 +16,7 @@ public sealed class OrderService(
     IOrderRepository orderRepository,
     ICustomerRepository customerRepository,
     IProductRepository productRepository,
+    IOrderFactory orderFactory,
     IDomainEventDispatcher domainEventDispatcher,
     ISpecification<Customer> activeCustomerSpecification,
     ISpecification<Product> availableProductSpecification)
@@ -47,7 +48,9 @@ public sealed class OrderService(
             throw new InvalidOperationException("Inactive customers cannot place orders.");
         }
 
-        var order = Order.Create(customer.Id);
+        // Complex aggregate creation is delegated to the domain factory, while
+        // the use case remains focused on orchestration.
+        var order = orderFactory.Create(customer.Id);
 
         await orderRepository.AddAsync(order, cancellationToken);
         await DispatchDomainEventsAsync(order, cancellationToken);

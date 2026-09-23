@@ -19,6 +19,7 @@ This repository is a learning-focused .NET sample for Domain-Driven Design (DDD)
 - [Domain Model](#domain-model)
 - [Value Objects](#value-objects)
 - [Aggregate Roots](#aggregate-roots)
+- [Factories](#factories)
 - [Domain Events](#domain-events)
 - [Specification Pattern](#specification-pattern)
 - [Business Rules](#business-rules)
@@ -164,7 +165,9 @@ src/Ordering.Domain
 |   |   |-- OrderConfirmedDomainEvent.cs
 |   |   |-- OrderCreatedDomainEvent.cs
 |   |   `-- OrderItemAddedDomainEvent.cs
+|   |-- IOrderFactory.cs
 |   |-- Order.cs
+|   |-- OrderFactory.cs
 |   |-- OrderItem.cs
 |   `-- OrderStatus.cs
 `-- Products
@@ -352,6 +355,59 @@ await orderItemRepository.SaveAsync(orderItem, cancellationToken);
    - `IOrderRepository`
 6. Do not add `IOrderItemRepository`.
    - `OrderItem` belongs to the `Order` aggregate.
+
+## Factories
+
+A factory creates a domain object in one valid starting state. It is useful when aggregate creation starts to involve multiple steps, default values, domain events, or creation rules.
+
+This sample shows both styles:
+
+- `Order.Create(customerId)` is a factory method on the aggregate.
+- `OrderFactory` is a domain factory service used by the Application layer.
+
+The aggregate still protects its own invariants. The factory gives application code one clear place to ask for a new `Order`:
+
+```csharp
+var order = orderFactory.Create(customer.Id);
+```
+
+For a more complete creation scenario, the factory can create the order and add the first item in one call:
+
+```csharp
+var order = orderFactory.CreateWithItem(
+    customer.Id,
+    product.Id,
+    product.Name,
+    product.UnitPrice,
+    quantity);
+```
+
+### How to implement factories
+
+1. Keep aggregate constructors private or internal.
+   - Outside code should not create invalid aggregate state with `new Order(...)`.
+2. Add a factory method on the aggregate for simple creation.
+   - `Order.Create(customerId)` validates the customer ID.
+   - It sets the initial status to `Pending`.
+   - It records `OrderCreatedDomainEvent`.
+3. Add a domain factory interface beside the aggregate.
+   - `src/Ordering.Domain/Orders/IOrderFactory.cs`
+   - This lets application services depend on a named creation concept.
+   - Add `Create(customerId)` for basic order creation.
+   - Add `CreateWithItem(...)` for creating an order with its first line item.
+4. Add the factory implementation beside the aggregate.
+   - `src/Ordering.Domain/Orders/OrderFactory.cs`
+   - It delegates to `Order.Create(customerId)` so the aggregate remains the owner of its invariants.
+   - It can compose multiple aggregate methods, such as `Order.Create(...)` followed by `order.AddItem(...)`.
+5. Inject the factory into the application service.
+   - `OrderService` uses `IOrderFactory` when handling `CreateOrderRequest`.
+   - The service stays focused on loading the customer, checking specifications, saving, and dispatching events.
+6. Register the factory in dependency injection.
+   - Add `services.AddSingleton<IOrderFactory, OrderFactory>()` in `AddOrderingInfrastructure`.
+   - The factory type lives in Domain, but the registration belongs in the composition setup.
+7. Add factory tests.
+   - Test valid order creation.
+   - Test invalid creation input, such as an empty customer ID.
 
 ## Domain Events
 
@@ -618,6 +674,7 @@ public static IServiceCollection AddOrderingInfrastructure(this IServiceCollecti
 4. Register services by region:
    - Persistence
    - Domain Events
+   - Factories
    - Specifications
 5. Keep Infrastructure replaceable.
    - API should call `AddOrderingInfrastructure`.
@@ -1027,6 +1084,7 @@ Use this checklist while reading the code:
 - Find where simple API values become value objects.
 - Notice which classes are aggregate roots.
 - Notice that `OrderItem` has no repository.
+- Read `IOrderFactory` and `OrderFactory`.
 - Read the order domain events and `AggregateRoot.DomainEvents`.
 - Read application services after the domain model.
 - Read `IDomainEventDispatcher` and the logging dispatcher.
